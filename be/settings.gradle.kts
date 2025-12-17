@@ -1,1 +1,1 @@
-rootProject.name = "ezmarket"
+rootProject.name = "smart-grocery"
