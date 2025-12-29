@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/pages/auth/profile_page.dart';
+import 'package:flutter_boilerplate/pages/family/family_list_page.dart'; // Import the new family list page
 import 'package:flutter_boilerplate/pages/fridge/fridge_page.dart';
 import 'package:flutter_boilerplate/pages/home/home_page.dart';
 import 'package:flutter_boilerplate/providers/auth_provider.dart';
@@ -16,32 +17,27 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = <Widget>[
-    HomePage(),
-    PlaceholderWidget(pageName: 'Nhóm'),
-    FridgePage(),
-    PlaceholderWidget(pageName: 'Thực Đơn'),
-    ProfilePage(),
+  // The list of pages is now stateful to handle different root pages for each tab
+  final List<Widget> _pages = <Widget>[
+    const HomePage(),
+    const FamilyListPage(), // Use the new FamilyListPage
+    const FridgePage(),
+    const PlaceholderWidget(pageName: 'Thực Đơn'),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
-    // Fetch fridge items when the fridge tab is selected
-    if (index == 2) {
-      // Assuming familyId is 1 for now. This should come from user data.
-      // We use 'context.read' here because we are in a method and don't need to rebuild.
+    // Special handling for fetching data when a tab is selected
+    if (index == 2) { // Fridge tab
       final authProvider = context.read<AuthProvider>();
       // TODO: Replace hardcoded familyId with the actual family ID from userInfo.
       context.read<FridgeProvider>().fetchFridgeItems(1);
     }
+    // Note: Family list is fetched automatically within FamilyListPage itself.
+
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch initial data for the first tab (HomePage) if needed
   }
 
   @override

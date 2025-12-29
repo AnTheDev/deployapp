@@ -11,7 +11,8 @@ import 'pages/auth/landing_page.dart';
 import 'pages/main_page.dart';
 import 'providers/auth_provider.dart';
 import 'providers/base_provider.dart';
-import 'providers/fridge_provider.dart'; // Import FridgeProvider
+import 'providers/family_provider.dart'; // Import FamilyProvider
+import 'providers/fridge_provider.dart';
 import 'routes.dart';
 import 'services/locator.dart';
 import 'services/shared_pref/shared_pref.dart';
@@ -40,7 +41,8 @@ Future<void> main() async {
         providers: [
           ChangeNotifierProvider.value(value: authProvider),
           ChangeNotifierProvider(create: (_) => BaseProvider()),
-          ChangeNotifierProvider(create: (_) => FridgeProvider()), // Register FridgeProvider
+          ChangeNotifierProvider(create: (_) => FridgeProvider()),
+          ChangeNotifierProvider(create: (_) => FamilyProvider()), // Register FamilyProvider
         ],
         child: const MyApp(),
       ),

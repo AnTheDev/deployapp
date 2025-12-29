@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_boilerplate/constants/api_config.dart';
 import 'package:flutter_boilerplate/models/auth_model.dart';
+import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/models/fridge_item.dart';
-import 'package:flutter_boilerplate/services/shared_pref/shared_pref.dart'; // Import SharedPref
+import 'package:flutter_boilerplate/services/shared_pref/shared_pref.dart';
 
 class ApiService {
   final Dio _dio;
@@ -14,29 +15,19 @@ class ApiService {
           receiveTimeout: const Duration(milliseconds: 15000),
         )) {
     _dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
-
-    // --- AUTHENTICATION INTERCEPTOR ---
     _dio.interceptors.add(QueuedInterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Get the token from storage
         final token = await SharedPref.getToken();
         if (token != null) {
-          // Add the token to the request header
           options.headers['Authorization'] = 'Bearer $token';
         }
-        return handler.next(options); // Continue with the request
-      },
-      onError: (e, handler) {
-        // TODO: Handle token expiration and refresh token logic here if needed
-        return handler.next(e);
+        return handler.next(options);
       },
     ));
   }
 
   static final ApiService _instance = ApiService._();
   factory ApiService() => _instance;
-
-  // ... (The rest of the methods remain the same)
 
   // --- Auth ---
   Future<LoginData> login({required String username, required String password, String? deviceToken}) async {
@@ -91,6 +82,53 @@ class ApiService {
       final response = await _dio.delete(ApiConfig.fridgeItemById(itemId));
       if (response.data['code'] != 1000) {
         throw Exception(response.data['message'] ?? 'Failed to delete item');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  // --- Family ---
+  Future<List<Family>> getFamilies() async {
+    try {
+      final response = await _dio.get(ApiConfig.families);
+      if (response.data['code'] == 1000 && response.data['data'] != null) {
+        List<dynamic> familiesJson = response.data['data'];
+        return familiesJson.map((json) => Family.fromJson(json)).toList();
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to load families');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<Family> getFamilyDetails(int familyId) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyById(familyId));
+      if (response.data['code'] == 1000 && response.data['data'] != null) {
+        return Family.fromJson(response.data['data']);
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to load family details');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<Family> createFamily(Map<String, dynamic> familyData) async {
+    try {
+      final response = await _dio.post(ApiConfig.families, data: familyData);
+      if (response.data['code'] == 1000 && response.data['data'] != null) {
+        return Family.fromJson(response.data['data']);
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to create family');
       }
     } on DioException catch (e) {
       throw _handleDioError(e);

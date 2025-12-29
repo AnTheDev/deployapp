@@ -25,11 +25,15 @@ class ApiConfig {
   // --- Fridge Item Endpoints ---
   static const String fridgeItems = '/fridge-items';
   static String familyFridgeItems(int familyId) => '/families/$familyId/fridge-items';
-  static String familyFridgeItemsActive(int familyId) => '/families/$familyId/fridge-items/active';
-  static String familyFridgeItemsExpiring(int familyId) => '/families/$familyId/fridge-items/expiring';
-  static String familyFridgeItemsExpired(int familyId) => '/families/$familyId/fridge-items/expired';
-  static String familyFridgeItemsStatistics(int familyId) => '/families/$familyId/fridge-items/statistics';
+  // ... other fridge endpoints
   static String fridgeItemById(int id) => '/fridge-items/$id';
-  static String consumeFridgeItem(int id) => '/fridge-items/$id/consume';
-  static String discardFridgeItem(int id) => '/fridge-items/$id/discard';
+
+  // --- Family Endpoints ---
+  static const String families = '/families';
+  static const String joinFamily = '/families/join';
+  static String familyById(int id) => '/families/$id';
+  static String familyMembers(int id) => '/families/$id/members';
+  static String leaveFamily(int id) => '/families/$id/leave';
+  static String regenerateInviteCode(int id) => '/families/$id/regenerate-invite-code';
+  static String familyMember(int familyId, int userId) => '/families/$familyId/members/$userId';
 }
