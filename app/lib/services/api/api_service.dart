@@ -240,8 +240,23 @@ class ApiService {
 
   Future<String> generateInviteCode(int familyId) async {
     try {
-      final response = await _dio.post(ApiConfig.familyInviteCode(familyId));
+      // Lấy thông tin family để lấy invite code có sẵn
+      final response = await _dio.get(ApiConfig.familyById(familyId));
       return response.data['data']['inviteCode'] ?? '';
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<String> regenerateInviteCode(int familyId) async {
+    try {
+      final response = await _dio.post(ApiConfig.regenerateInviteCode(familyId));
+      return response.data['data']['inviteCode'] ?? '';
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<FamilyInvitation> inviteFriendToFamily(int familyId, int friendId) async {
+    try {
+      final response = await _dio.post(ApiConfig.inviteFriendToFamily(familyId, friendId));
+      return FamilyInvitation.fromJson(response.data['data']);
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 

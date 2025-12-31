@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_boilerplate/models/family_model.dart';
+import 'package:flutter_boilerplate/models/auth_model.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/pages/shopping/shopping_list_page.dart';
@@ -22,7 +23,6 @@ class FamilyDetailPage extends StatefulWidget {
 
 class _FamilyDetailPageState extends State<FamilyDetailPage> {
   final ApiService _apiService = locator<ApiService>();
-  bool _isGeneratingCode = false;
   bool _isUpdatingImage = false;
   final ImagePicker _picker = ImagePicker();
 
@@ -161,73 +161,15 @@ class _FamilyDetailPageState extends State<FamilyDetailPage> {
     }
   }
 
-  void _showInviteDialog(Family family) async {
-    setState(() => _isGeneratingCode = true);
-    
-    try {
-      final inviteCode = await _apiService.generateInviteCode(family.id);
-      if (!mounted) return;
-      
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Mời thành viên'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Chia sẻ mã mời này cho bạn bè:'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      inviteCode.isNotEmpty ? inviteCode : 'N/A',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(
-                          text: inviteCode,
-                        ));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Đã sao chép mã mời')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Đóng'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: ${e.toString()}')),
-      );
-    } finally {
-      if (mounted) setState(() => _isGeneratingCode = false);
-    }
+  void _showInviteDialog(Family family, List<FamilyMember> members) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _InviteMemberDialog(
+        family: family,
+        apiService: _apiService,
+        members: members,
+      ),
+    );
   }
 
   void _navigateToShoppingList(Family family) {
@@ -510,8 +452,8 @@ class _FamilyDetailPageState extends State<FamilyDetailPage> {
                         icon: Icons.person_add,
                         text: 'Thêm thành viên',
                         color: orangeColor,
-                        isLoading: _isGeneratingCode,
-                        onTap: () => _showInviteDialog(family),
+                        isLoading: false,
+                        onTap: () => _showInviteDialog(family, members),
                       ),
                       _buildActionButton(
                         icon: Icons.shopping_cart,
@@ -609,6 +551,322 @@ class _FamilyDetailPageState extends State<FamilyDetailPage> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+// Dialog mời thành viên với 2 tab
+class _InviteMemberDialog extends StatefulWidget {
+  final Family family;
+  final ApiService apiService;
+  final List<FamilyMember> members;
+
+  const _InviteMemberDialog({
+    Key? key,
+    required this.family,
+    required this.apiService,
+    required this.members,
+  }) : super(key: key);
+
+  @override
+  _InviteMemberDialogState createState() => _InviteMemberDialogState();
+}
+
+class _InviteMemberDialogState extends State<_InviteMemberDialog> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  
+  // Tab 1: Mã mời
+  String? _inviteCode;
+  bool _isLoadingCode = false;
+  
+  // Tab 2: Mời bạn bè
+  List<UserInfo> _friends = [];
+  bool _isLoadingFriends = false;
+  Set<int> _invitingFriendIds = {};
+  Set<int> _invitedFriendIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadInviteCode();
+    _loadFriends();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInviteCode() async {
+    setState(() => _isLoadingCode = true);
+    try {
+      final code = await widget.apiService.generateInviteCode(widget.family.id);
+      if (mounted) {
+        setState(() => _inviteCode = code);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải mã mời: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingCode = false);
+    }
+  }
+
+  Future<void> _loadFriends() async {
+    setState(() => _isLoadingFriends = true);
+    try {
+      final friends = await widget.apiService.getFriends();
+      // Loại bỏ các bạn đã là thành viên gia đình
+      final memberIds = widget.members.map((m) => m.id).toSet();
+      final availableFriends = friends.where((f) => !memberIds.contains(f.id)).toList();
+      if (mounted) {
+        setState(() => _friends = availableFriends);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải danh sách bạn bè: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingFriends = false);
+    }
+  }
+
+  Future<void> _inviteFriend(UserInfo friend) async {
+    setState(() => _invitingFriendIds.add(friend.id));
+    try {
+      await widget.apiService.inviteFriendToFamily(widget.family.id, friend.id);
+      if (mounted) {
+        setState(() => _invitedFriendIds.add(friend.id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã gửi lời mời đến ${friend.fullName}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _invitingFriendIds.remove(friend.id));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        height: MediaQuery.of(context).size.height * 0.6,
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_add, color: Colors.white),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Mời thành viên',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Tab Bar
+            TabBar(
+              controller: _tabController,
+              labelColor: Theme.of(context).primaryColor,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Theme.of(context).primaryColor,
+              tabs: const [
+                Tab(icon: Icon(Icons.qr_code), text: 'Mã mời'),
+                Tab(icon: Icon(Icons.people), text: 'Bạn bè'),
+              ],
+            ),
+            
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildInviteCodeTab(),
+                  _buildFriendsTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInviteCodeTab() {
+    if (_isLoadingCode) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.share, size: 48, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text(
+            'Chia sẻ mã mời này cho bạn bè:',
+            style: TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _inviteCode ?? 'N/A',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 3,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  icon: const Icon(Icons.copy, color: Colors.blue),
+                  tooltip: 'Sao chép',
+                  onPressed: () {
+                    if (_inviteCode != null) {
+                      Clipboard.setData(ClipboardData(text: _inviteCode!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Đã sao chép mã mời')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Bạn bè có thể dùng mã này để tham gia gia đình',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendsTab() {
+    if (_isLoadingFriends) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_friends.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text(
+                'Không có bạn bè nào để mời',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tất cả bạn bè đều đã là thành viên hoặc bạn chưa có bạn bè',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _friends.length,
+      itemBuilder: (context, index) {
+        final friend = _friends[index];
+        final isInviting = _invitingFriendIds.contains(friend.id);
+        final isInvited = _invitedFriendIds.contains(friend.id);
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.blue[100],
+            child: Text(
+              friend.fullName.isNotEmpty ? friend.fullName[0].toUpperCase() : '?',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+          ),
+          title: Text(
+            friend.fullName,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text('@${friend.username}'),
+          trailing: isInvited
+              ? const Chip(
+                  label: Text('Đã mời', style: TextStyle(color: Colors.white)),
+                  backgroundColor: Colors.green,
+                )
+              : ElevatedButton(
+                  onPressed: isInviting ? null : () => _inviteFriend(friend),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  child: isInviting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Mời'),
+                ),
+        );
+      },
     );
   }
 }

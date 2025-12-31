@@ -69,7 +69,7 @@ class ApiConfig {
   static String familyInviteCode(int id) => '/families/$id/invite-code';
   static String regenerateInviteCode(int id) => '/families/$id/regenerate-invite-code';
   static String familyMember(int familyId, int userId) => '/families/$familyId/members/$userId';
-  static String inviteFriendToFamily(int familyId) => '/families/$familyId/invite';
+  static String inviteFriendToFamily(int familyId, int friendId) => '/families/$familyId/invite/$friendId';
 
   // --- Fridge Endpoints ---
   static const String fridgeItems = '/fridge-items';
