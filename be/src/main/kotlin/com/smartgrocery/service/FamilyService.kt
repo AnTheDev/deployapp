@@ -3,11 +3,7 @@ package com.smartgrocery.service
 import com.smartgrocery.dto.family.*
 import com.smartgrocery.entity.*
 import com.smartgrocery.exception.*
-import com.smartgrocery.repository.FamilyInvitationRepository
-import com.smartgrocery.repository.FamilyMemberRepository
-import com.smartgrocery.repository.FamilyRepository
-import com.smartgrocery.repository.FriendshipRepository
-import com.smartgrocery.repository.UserRepository
+import com.smartgrocery.repository.*
 import com.smartgrocery.security.CustomUserDetails
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
@@ -22,14 +18,15 @@ class FamilyService(
     private val familyMemberRepository: FamilyMemberRepository,
     private val userRepository: UserRepository,
     private val familyInvitationRepository: FamilyInvitationRepository,
-    private val fileStorageService: FileStorageService
+    private val fileStorageService: FileStorageService,
+    private val friendshipRepository: FriendshipRepository
 ) {
 
     @Transactional
     fun createFamily(request: CreateFamilyRequest, image: MultipartFile?): FamilyResponse {
         val currentUser = getCurrentUser()
-        val user = userRepository.findById(currentUser.id)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+        val user =
+            userRepository.findById(currentUser.id).orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
         val inviteCode = generateInviteCode()
 
@@ -63,10 +60,7 @@ class FamilyService(
                 // Skip if the friend doesn't exist
                 if (userRepository.existsById(friend.id!!)) {
                     val invitation = FamilyInvitation(
-                        family = savedFamily,
-                        inviter = user,
-                        invitee = friend,
-                        status = InvitationStatus.PENDING
+                        family = savedFamily, inviter = user, invitee = friend, status = InvitationStatus.PENDING
                     )
                     familyInvitationRepository.save(invitation)
                 }
@@ -79,8 +73,8 @@ class FamilyService(
     @Transactional
     fun joinFamily(request: JoinFamilyRequest): FamilyResponse {
         val currentUser = getCurrentUser()
-        val user = userRepository.findById(currentUser.id)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+        val user =
+            userRepository.findById(currentUser.id).orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
         val family = familyRepository.findByInviteCodeWithCreatedBy(request.inviteCode)
             ?: throw ApiException(ErrorCode.INVALID_INVITE_CODE)
@@ -106,7 +100,7 @@ class FamilyService(
 
     fun getFamilyById(familyId: Long): FamilyDetailResponse {
         val currentUser = getCurrentUser()
-        
+
         // Check membership
         if (!familyMemberRepository.existsByFamilyIdAndUserId(familyId, currentUser.id)) {
             throw ForbiddenException("You are not a member of this family")
@@ -130,7 +124,7 @@ class FamilyService(
 
     fun getFamilyMembers(familyId: Long): List<FamilyMemberResponse> {
         val currentUser = getCurrentUser()
-        
+
         // Check membership
         if (!familyMemberRepository.existsByFamilyIdAndUserId(familyId, currentUser.id)) {
             throw ForbiddenException("You are not a member of this family")
@@ -145,8 +139,8 @@ class FamilyService(
         val currentUser = getCurrentUser()
         checkLeaderPermission(familyId, currentUser.id)
 
-        val family = familyRepository.findById(familyId)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
+        val family =
+            familyRepository.findById(familyId).orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
 
         request.name?.let { family.name = it }
         request.description?.let { family.description = it }
@@ -162,8 +156,10 @@ class FamilyService(
         val currentUser = getCurrentUser()
         checkLeaderPermission(familyId, currentUser.id)
 
-        val member = familyMemberRepository.findByFamilyIdAndUserId(familyId, userId)
-            ?: throw ResourceNotFoundException(ErrorCode.NOT_A_MEMBER)
+        val member =
+            familyMemberRepository.findByFamilyIdAndUserId(familyId, userId) ?: throw ResourceNotFoundException(
+                ErrorCode.NOT_A_MEMBER
+            )
 
         request.nickname?.let { member.nickname = it }
         request.role?.let { member.role = it }
@@ -177,8 +173,10 @@ class FamilyService(
         val currentUser = getCurrentUser()
         checkLeaderPermission(familyId, currentUser.id)
 
-        val member = familyMemberRepository.findByFamilyIdAndUserId(familyId, userId)
-            ?: throw ResourceNotFoundException(ErrorCode.NOT_A_MEMBER)
+        val member =
+            familyMemberRepository.findByFamilyIdAndUserId(familyId, userId) ?: throw ResourceNotFoundException(
+                ErrorCode.NOT_A_MEMBER
+            )
 
         if (member.role == FamilyRole.LEADER) {
             throw ApiException(ErrorCode.CANNOT_REMOVE_LEADER)
@@ -190,16 +188,19 @@ class FamilyService(
     @Transactional
     fun leaveFamily(familyId: Long) {
         val currentUser = getCurrentUser()
-        
-        val member = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.id)
-            ?: throw ResourceNotFoundException(ErrorCode.NOT_A_MEMBER)
+
+        val member =
+            familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.id) ?: throw ResourceNotFoundException(
+                ErrorCode.NOT_A_MEMBER
+            )
 
         if (member.role == FamilyRole.LEADER) {
             // Check if there are other members
             val members = familyMemberRepository.findByFamilyIdWithUsers(familyId)
             if (members.size > 1) {
-                throw ApiException(ErrorCode.CANNOT_REMOVE_LEADER, 
-                    "Please transfer leadership before leaving the family")
+                throw ApiException(
+                    ErrorCode.CANNOT_REMOVE_LEADER, "Please transfer leadership before leaving the family"
+                )
             }
             // If leader is the only member, delete the family
             familyRepository.deleteById(familyId)
@@ -213,8 +214,8 @@ class FamilyService(
         val currentUser = getCurrentUser()
         checkLeaderPermission(familyId, currentUser.id)
 
-        val family = familyRepository.findById(familyId)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
+        val family =
+            familyRepository.findById(familyId).orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
 
         family.inviteCode = generateInviteCode()
         familyRepository.save(family)
@@ -328,20 +329,17 @@ class FamilyService(
             throw ConflictException(ErrorCode.FAMILY_INVITATION_NOT_FOUND, "Invitation already sent")
         }
 
-        val user = userRepository.findById(currentUser.id)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+        val user =
+            userRepository.findById(currentUser.id).orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
-        val friend = userRepository.findById(friendId)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+        val friend =
+            userRepository.findById(friendId).orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
-        val family = familyRepository.findById(familyId)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
+        val family =
+            familyRepository.findById(familyId).orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
 
         val invitation = FamilyInvitation(
-            family = family,
-            inviter = user,
-            invitee = friend,
-            status = InvitationStatus.PENDING
+            family = family, inviter = user, invitee = friend, status = InvitationStatus.PENDING
         )
 
         val savedInvitation = familyInvitationRepository.save(invitation)
@@ -357,8 +355,8 @@ class FamilyService(
         val currentUser = getCurrentUser()
         checkLeaderPermission(familyId, currentUser.id)
 
-        val family = familyRepository.findById(familyId)
-            .orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
+        val family =
+            familyRepository.findById(familyId).orElseThrow { ResourceNotFoundException(ErrorCode.FAMILY_NOT_FOUND) }
 
         request.name?.let { family.name = it }
         request.description?.let { family.description = it }
@@ -390,9 +388,7 @@ class FamilyService(
             imageUrl = family.imageUrl?.let { "/files/$it" },
             inviteCode = family.inviteCode,
             createdBy = UserSimpleResponse(
-                id = family.createdBy.id!!,
-                username = family.createdBy.username,
-                fullName = family.createdBy.fullName
+                id = family.createdBy.id!!, username = family.createdBy.username, fullName = family.createdBy.fullName
             ),
             memberCount = memberCount,
             createdAt = family.createdAt
@@ -410,9 +406,7 @@ class FamilyService(
             imageUrl = family.imageUrl?.let { "/files/$it" },
             inviteCode = family.inviteCode,
             createdBy = UserSimpleResponse(
-                id = family.createdBy.id!!,
-                username = family.createdBy.username,
-                fullName = family.createdBy.fullName
+                id = family.createdBy.id!!, username = family.createdBy.username, fullName = family.createdBy.fullName
             ),
             members = family.members.map { toFamilyMemberResponse(it) },
             pendingInvitations = invitations.map { toFamilyInvitationResponse(it) },

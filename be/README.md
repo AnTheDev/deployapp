@@ -9,7 +9,9 @@ Backend API cho ứng dụng di động đa nền tảng giúp các gia đình q
 - [Tính Năng](#tính-năng)
 - [Cấu Trúc Dự Án](#cấu-trúc-dự-án)
 - [Hướng Dẫn Cài Đặt](#hướng-dẫn-cài-đặt)
+- [Tài Khoản Test](#tài-khoản-test)
 - [Tài Liệu API](#tài-liệu-api)
+- [Hướng Dẫn Chi Tiết Cho Frontend](#hướng-dẫn-chi-tiết-cho-frontend)
 - [Sơ Đồ Database](#sơ-đồ-database)
 - [Bảo Mật](#bảo-mật)
 - [Xử Lý Lỗi](#xử-lý-lỗi)
@@ -48,16 +50,33 @@ Backend API cho ứng dụng di động đa nền tảng giúp các gia đình q
 - ✅ Phân quyền theo vai trò (ADMIN, USER)
 - ✅ Quản lý hồ sơ cá nhân
 - ✅ Lưu trữ FCM token cho push notification
+- ✅ **Tìm kiếm người dùng** với xếp hạng kết quả thông minh
 
-### 2. Quản Lý Gia Đình
+### 2. Hệ Thống Bạn Bè 🆕
+- ✅ Gửi lời mời kết bạn
+- ✅ Chấp nhận / Từ chối lời mời kết bạn
+- ✅ Xem danh sách bạn bè
+- ✅ Xem danh sách lời mời đang chờ
+- ✅ Hủy kết bạn
+- ✅ Kiểm tra trạng thái bạn bè giữa 2 người dùng
+
+### 3. Quản Lý Gia Đình
 - ✅ Tạo gia đình với mã mời duy nhất
+- ✅ **Upload ảnh đại diện gia đình** (Multipart Form)
+- ✅ **Mời bạn bè vào gia đình** khi tạo
 - ✅ Tham gia gia đình bằng mã mời
 - ✅ Phân quyền theo vai trò (TRƯỞNG NHÓM, THÀNH VIÊN)
 - ✅ Quản lý thành viên (thêm, xóa, cập nhật vai trò)
 - ✅ Tạo lại mã mời
 - ✅ Rời gia đình / Xóa gia đình
 
-### 3. Danh Sách Mua Sắm
+### 4. Lời Mời Gia Đình 🆕
+- ✅ Mời bạn bè vào gia đình (chỉ Leader)
+- ✅ Xem danh sách lời mời đang chờ
+- ✅ Chấp nhận / Từ chối lời mời vào gia đình
+- ✅ Tự động thêm thành viên khi chấp nhận lời mời
+
+### 5. Danh Sách Mua Sắm
 - ✅ Tạo danh sách mua sắm với các mục
 - ✅ **Optimistic Locking** cho chỉnh sửa đồng thời
 - ✅ Chọn sản phẩm linh hoạt (sản phẩm có sẵn HOẶC tên tùy chỉnh)
@@ -66,7 +85,7 @@ Backend API cho ứng dụng di động đa nền tảng giúp các gia đình q
 - ✅ Thêm nhiều mục cùng lúc
 - ✅ Lọc theo trạng thái (ĐANG LẬP, ĐANG MUA, HOÀN THÀNH)
 
-### 4. Quản Lý Tủ Lạnh
+### 6. Quản Lý Tủ Lạnh
 - ✅ Thêm thực phẩm với ngày hết hạn
 - ✅ Nhiều vị trí lưu trữ (NGĂN ĐÁ, NGĂN MÁT, TỦ ĐỒ KHÔ)
 - ✅ Theo dõi trạng thái (TƯƠI, SẮP HẾT HẠN, HẾT HẠN, ĐÃ DÙNG, ĐÃ BỎ)
@@ -75,7 +94,7 @@ Backend API cho ứng dụng di động đa nền tảng giúp các gia đình q
 - ✅ Bảng thống kê tủ lạnh
 - ✅ Tự động cập nhật trạng thái hết hạn
 
-### 5. Công Thức Nấu Ăn
+### 7. Công Thức Nấu Ăn
 - ✅ Tạo/chỉnh sửa công thức với nguyên liệu
 - ✅ Công thức công khai và riêng tư
 - ✅ Mức độ khó (DỄ, TRUNG BÌNH, KHÓ)
@@ -83,19 +102,26 @@ Backend API cho ứng dụng di động đa nền tảng giúp các gia đình q
 - ✅ **Gợi ý công thức** dựa trên nguyên liệu trong tủ lạnh
 - ✅ Tính toán phần trăm nguyên liệu khớp
 
-### 6. Lập Kế Hoạch Bữa Ăn
+### 8. Lập Kế Hoạch Bữa Ăn
 - ✅ Kế hoạch bữa ăn **Master-Detail** (Kế hoạch + Món ăn)
 - ✅ Ràng buộc duy nhất: một kế hoạch cho mỗi gia đình/ngày/loại bữa
 - ✅ Loại bữa ăn: SÁNG, TRƯA, TỐI, PHỤ
 - ✅ Xem theo ngày và tuần
 - ✅ Liên kết công thức hoặc dùng tên món tùy chỉnh
 
-### 7. Tác Vụ Nền
+### 9. Upload & Phục Vụ File 🆕
+- ✅ Upload ảnh (JPG, PNG, GIF, WebP)
+- ✅ Giới hạn kích thước file (mặc định 5MB)
+- ✅ Tạo tên file unique (UUID)
+- ✅ Public endpoint để lấy ảnh (không cần xác thực)
+- ✅ Hỗ trợ ảnh đại diện gia đình
+
+### 10. Tác Vụ Nền
 - ✅ Kiểm tra hết hạn hàng ngày (8 giờ sáng)
 - ✅ Cập nhật trạng thái hàng giờ cho thực phẩm hết hạn
 - ✅ Push notification mô phỏng (sẵn sàng tích hợp FCM)
 
-### 8. Dữ Liệu Danh Mục (Admin)
+### 11. Dữ Liệu Danh Mục (Admin)
 - ✅ Quản lý danh mục với icon
 - ✅ Danh mục sản phẩm mẫu
 - ✅ Quan hệ sản phẩm-danh mục
@@ -115,27 +141,34 @@ src/main/kotlin/com/smartgrocery/
 │   ├── AuthController.kt
 │   ├── CategoryController.kt
 │   ├── FamilyController.kt
+│   ├── FileController.kt            # 🆕 Phục vụ file tĩnh
+│   ├── FriendController.kt          # 🆕 Quản lý bạn bè
 │   ├── FridgeController.kt
 │   ├── MealPlanController.kt
 │   ├── ProductController.kt
 │   ├── RecipeController.kt
-│   └── ShoppingListController.kt
+│   ├── ShoppingListController.kt
+│   └── UserController.kt            # 🆕 Tìm kiếm user
 ├── dto/                             # Data Transfer Objects
 │   ├── auth/
 │   ├── category/
 │   ├── common/
 │   ├── family/
 │   ├── fridge/
+│   ├── friendship/                  # 🆕 DTOs cho bạn bè
 │   ├── mealplan/
 │   ├── product/
 │   ├── recipe/
-│   └── shopping/
+│   ├── shopping/
+│   └── user/                        # 🆕 DTOs cho user
 ├── entity/                          # JPA Entities
 │   ├── BaseEntity.kt
 │   ├── Category.kt
 │   ├── Family.kt
+│   ├── FamilyInvitation.kt          # 🆕 Lời mời gia đình
 │   ├── FamilyMember.kt
 │   ├── FridgeItem.kt
+│   ├── Friendship.kt                # 🆕 Quan hệ bạn bè
 │   ├── MasterProduct.kt
 │   ├── MealItem.kt
 │   ├── MealPlan.kt
@@ -161,7 +194,9 @@ src/main/kotlin/com/smartgrocery/
     ├── AuthService.kt
     ├── CategoryService.kt
     ├── FamilyService.kt
+    ├── FileStorageService.kt        # 🆕 Quản lý file upload
     ├── FridgeService.kt
+    ├── FriendshipService.kt         # 🆕 Quản lý bạn bè
     ├── MealPlanService.kt
     ├── ProductService.kt
     ├── RecipeService.kt
@@ -170,7 +205,9 @@ src/main/kotlin/com/smartgrocery/
 src/main/resources/
 ├── application.yml                  # Cấu hình ứng dụng
 └── db/migration/
-    └── V1__Initial_Schema.sql      # Migration database
+    ├── V1__Initial_Schema.sql       # Migration database
+    ├── V3__Add_Friendships_And_Family_Image.sql  # 🆕 Bạn bè & Lời mời gia đình
+    └── V4__Add_Sample_Users.sql     # 🆕 User mẫu cho test
 ```
 
 ## 🚀 Hướng Dẫn Cài Đặt
@@ -217,6 +254,29 @@ java -jar build/libs/smart-grocery-1.0.0.jar
 
 Mở http://localhost:8080/swagger-ui.html
 
+## 👤 Tài Khoản Test
+
+Hệ thống có sẵn các tài khoản để test. **Password cho tất cả là: `123456`**
+
+### Tài Khoản Admin
+| Username | Email | Full Name | Role |
+|----------|-------|-----------|------|
+| `admin` | admin@smartgrocery.com | System Admin | ADMIN, USER |
+
+### Tài Khoản User Thường
+| Username | Email | Full Name |
+|----------|-------|-----------|
+| `nguyenvana` | nguyenvana@gmail.com | Nguyễn Văn A |
+| `tranthib` | tranthib@gmail.com | Trần Thị B |
+| `levanc` | levanc@gmail.com | Lê Văn C |
+| `phamthid` | phamthid@gmail.com | Phạm Thị D |
+| `hoangvane` | hoangvane@gmail.com | Hoàng Văn E |
+| `vuthif` | vuthif@gmail.com | Vũ Thị F |
+| `dangvang` | dangvang@gmail.com | Đặng Văn G |
+| `buithih` | buithih@gmail.com | Bùi Thị H |
+| `dovani` | dovani@gmail.com | Đỗ Văn I |
+| `ngothik` | ngothik@gmail.com | Ngô Thị K |
+
 ## 📚 Tài Liệu API
 
 ### Định Dạng Response Chuẩn
@@ -251,7 +311,374 @@ Tất cả API trả về JSON theo định dạng thống nhất:
 | 1600+ | Lỗi liên quan tủ lạnh |
 | 1700+ | Lỗi liên quan công thức |
 | 1800+ | Lỗi liên quan kế hoạch bữa ăn |
+| **2000+** | **Lỗi liên quan bạn bè** |
+| **2100+** | **Lỗi liên quan lời mời gia đình** |
+| **2200+** | **Lỗi liên quan file upload** |
 | 5000 | Lỗi máy chủ nội bộ |
+
+## 📖 Hướng Dẫn Chi Tiết Cho Frontend
+
+### 1. Tìm Kiếm Người Dùng
+
+API tìm kiếm người dùng hỗ trợ tìm theo username, full name, và email.
+
+**Endpoint:** `GET /api/v1/users/search?keyword={keyword}&page=0&size=20`
+
+**Ví dụ:**
+```bash
+# Tìm user có tên chứa "nguyen"
+curl -X GET 'http://localhost:8080/api/v1/users/search?keyword=nguyen' \
+  -H 'Authorization: Bearer <token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "message": "Success",
+  "data": {
+    "content": [
+      {
+        "id": 2,
+        "username": "nguyenvana",
+        "fullName": "Nguyễn Văn A",
+        "email": "nguyenvana@gmail.com"
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "totalPages": 1
+  }
+}
+```
+
+**Lưu ý:**
+- Kết quả được xếp hạng: ưu tiên match chính xác, sau đó match bắt đầu bằng keyword
+- User hiện tại sẽ bị loại khỏi kết quả
+
+---
+
+### 2. Hệ Thống Bạn Bè
+
+#### 2.1. Gửi Lời Mời Kết Bạn
+
+**Endpoint:** `POST /api/v1/friends/request/{userId}`
+
+```bash
+curl -X POST 'http://localhost:8080/api/v1/friends/request/3' \
+  -H 'Authorization: Bearer <token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1001,
+  "message": "Friend request sent",
+  "data": {
+    "id": 1,
+    "requester": {
+      "id": 2,
+      "username": "nguyenvana",
+      "fullName": "Nguyễn Văn A"
+    },
+    "addressee": {
+      "id": 3,
+      "username": "tranthib",
+      "fullName": "Trần Thị B"
+    },
+    "status": "PENDING",
+    "createdAt": "2025-01-01T10:00:00Z"
+  }
+}
+```
+
+#### 2.2. Xem Lời Mời Đang Chờ
+
+**Endpoint:** `GET /api/v1/friends/pending`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/friends/pending' \
+  -H 'Authorization: Bearer <token>'
+```
+
+#### 2.3. Chấp Nhận / Từ Chối Lời Mời
+
+**Endpoint:** `POST /api/v1/friends/respond/{friendshipId}`
+
+```bash
+# Chấp nhận
+curl -X POST 'http://localhost:8080/api/v1/friends/respond/1' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"accept": true}'
+
+# Từ chối
+curl -X POST 'http://localhost:8080/api/v1/friends/respond/1' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"accept": false}'
+```
+
+#### 2.4. Xem Danh Sách Bạn Bè
+
+**Endpoint:** `GET /api/v1/friends`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/friends' \
+  -H 'Authorization: Bearer <token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "message": "Success",
+  "data": [
+    {
+      "id": 3,
+      "username": "tranthib",
+      "fullName": "Trần Thị B",
+      "email": "tranthib@gmail.com"
+    }
+  ]
+}
+```
+
+#### 2.5. Hủy Kết Bạn
+
+**Endpoint:** `DELETE /api/v1/friends/{friendId}`
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/friends/3' \
+  -H 'Authorization: Bearer <token>'
+```
+
+#### 2.6. Kiểm Tra Trạng Thái Bạn Bè
+
+**Endpoint:** `GET /api/v1/friends/status/{userId}`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/friends/status/3' \
+  -H 'Authorization: Bearer <token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "data": {
+    "userId": 3,
+    "status": "ACCEPTED",  // "NONE", "PENDING_SENT", "PENDING_RECEIVED", "ACCEPTED"
+    "friendshipId": 1
+  }
+}
+```
+
+---
+
+### 3. Tạo Gia Đình Với Ảnh & Mời Bạn Bè
+
+Khi tạo gia đình mới, bạn **BẮT BUỘC phải mời ít nhất 1 bạn bè**.
+
+**Endpoint:** `POST /api/v1/families` (multipart/form-data)
+
+**Các field:**
+| Field | Type | Required | Mô tả |
+|-------|------|----------|-------|
+| `name` | string | ✅ | Tên gia đình |
+| `description` | string | ❌ | Mô tả |
+| `friendIds` | array | ✅ | Danh sách ID bạn bè cần mời (ít nhất 1) |
+| `image` | file | ❌ | Ảnh đại diện gia đình |
+
+**Ví dụ với cURL:**
+```bash
+curl -X POST 'http://localhost:8080/api/v1/families' \
+  -H 'Authorization: Bearer <token>' \
+  -F 'name=Gia đình Nguyễn' \
+  -F 'description=Gia đình hạnh phúc' \
+  -F 'friendIds=3' \
+  -F 'friendIds=4' \
+  -F 'image=@/path/to/family-photo.jpg'
+```
+
+**Ví dụ với JavaScript (FormData):**
+```javascript
+const formData = new FormData();
+formData.append('name', 'Gia đình Nguyễn');
+formData.append('description', 'Gia đình hạnh phúc');
+formData.append('friendIds', '3');
+formData.append('friendIds', '4');
+formData.append('image', imageFile);
+
+const response = await fetch('/api/v1/families', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  body: formData
+});
+```
+
+**Response:**
+```json
+{
+  "code": 1001,
+  "message": "Family created successfully",
+  "data": {
+    "id": 1,
+    "name": "Gia đình Nguyễn",
+    "description": "Gia đình hạnh phúc",
+    "imageUrl": "/files/families/abc123-family.jpg",
+    "inviteCode": "ABC123",
+    "createdBy": {
+      "id": 2,
+      "username": "nguyenvana",
+      "fullName": "Nguyễn Văn A"
+    },
+    "memberCount": 1,
+    "createdAt": "2025-01-01T10:00:00Z"
+  }
+}
+```
+
+---
+
+### 4. Xem & Phản Hồi Lời Mời Gia Đình
+
+#### 4.1. Xem Lời Mời Đang Chờ
+
+**Endpoint:** `GET /api/v1/families/invitations`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/families/invitations' \
+  -H 'Authorization: Bearer <token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "data": [
+    {
+      "id": 1,
+      "familyId": 1,
+      "familyName": "Gia đình Nguyễn",
+      "inviter": {
+        "id": 2,
+        "username": "nguyenvana",
+        "fullName": "Nguyễn Văn A"
+      },
+      "invitee": {
+        "id": 3,
+        "username": "tranthib",
+        "fullName": "Trần Thị B"
+      },
+      "status": "PENDING",
+      "createdAt": "2025-01-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### 4.2. Chấp Nhận / Từ Chối Lời Mời
+
+**Endpoint:** `POST /api/v1/families/invitations/{invitationId}/respond`
+
+```bash
+# Chấp nhận
+curl -X POST 'http://localhost:8080/api/v1/families/invitations/1/respond' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"accept": true}'
+
+# Từ chối
+curl -X POST 'http://localhost:8080/api/v1/families/invitations/1/respond' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"accept": false}'
+```
+
+**Lưu ý:** Khi chấp nhận lời mời, user sẽ tự động được thêm vào gia đình với role MEMBER.
+
+#### 4.3. Mời Thêm Bạn Bè Vào Gia Đình (Leader Only)
+
+**Endpoint:** `POST /api/v1/families/{familyId}/invite/{friendId}`
+
+```bash
+curl -X POST 'http://localhost:8080/api/v1/families/1/invite/5' \
+  -H 'Authorization: Bearer <token>'
+```
+
+---
+
+### 5. Cập Nhật Gia Đình Với Ảnh Mới
+
+**Endpoint:** `PUT /api/v1/families/{id}` (multipart/form-data)
+
+```bash
+curl -X PUT 'http://localhost:8080/api/v1/families/1' \
+  -H 'Authorization: Bearer <token>' \
+  -F 'name=Gia đình Nguyễn (Updated)' \
+  -F 'image=@/path/to/new-photo.jpg'
+```
+
+---
+
+### 6. Lấy Ảnh Gia Đình
+
+Ảnh được lưu với đường dẫn trong field `imageUrl`. Đây là public endpoint, **không cần authentication**.
+
+**Endpoint:** `GET /files/{path}`
+
+**Ví dụ:**
+- Nếu `imageUrl = "/files/families/abc123.jpg"`
+- URL đầy đủ: `http://localhost:8080/files/families/abc123.jpg`
+
+```html
+<!-- Trong HTML/React -->
+<img src="http://localhost:8080/files/families/abc123.jpg" alt="Family photo" />
+```
+
+---
+
+### 7. Flow Tạo Gia Đình Hoàn Chỉnh
+
+```
+1. User A đăng nhập
+2. User A tìm kiếm người dùng: GET /api/v1/users/search?keyword=...
+3. User A gửi lời mời kết bạn cho User B: POST /api/v1/friends/request/{userBId}
+4. User B đăng nhập, xem lời mời: GET /api/v1/friends/pending
+5. User B chấp nhận: POST /api/v1/friends/respond/{friendshipId} { "accept": true }
+6. User A tạo gia đình và mời User B:
+   POST /api/v1/families (form-data với friendIds=[userBId])
+7. User B xem lời mời gia đình: GET /api/v1/families/invitations
+8. User B chấp nhận: POST /api/v1/families/invitations/{id}/respond { "accept": true }
+9. User B giờ là thành viên gia đình!
+```
+
+---
+
+### 8. Error Codes Mới
+
+| Code | Message | Mô tả |
+|------|---------|-------|
+| 2000 | Friendship not found | Không tìm thấy quan hệ bạn bè |
+| 2001 | Friend request already exists | Lời mời kết bạn đã tồn tại |
+| 2002 | Cannot send request to self | Không thể gửi lời mời cho chính mình |
+| 2003 | Not friends | Hai người chưa là bạn bè |
+| 2004 | Already friends | Đã là bạn bè rồi |
+| 2005 | Friend request not pending | Lời mời không ở trạng thái chờ |
+| 2006 | Not your friend request | Lời mời này không phải của bạn |
+| 2100 | Family invitation not found | Không tìm thấy lời mời gia đình |
+| 2101 | Not invited to family | Bạn không được mời vào gia đình này |
+| 2102 | Invitation not pending | Lời mời không ở trạng thái chờ |
+| 2103 | Must invite at least one friend | Phải mời ít nhất 1 bạn bè khi tạo gia đình |
+| 2104 | Can only invite friends | Chỉ có thể mời bạn bè |
+| 2200 | File not found | Không tìm thấy file |
+| 2201 | File upload failed | Upload file thất bại |
+| 2202 | Invalid file type | Loại file không hợp lệ |
+| 2203 | File too large | File quá lớn |
 
 ## 🗄 Sơ Đồ Database
 
@@ -260,9 +687,17 @@ Tất cả API trả về JSON theo định dạng thống nhất:
 ```
 User ──< UserRole >── Role
 
+User ──< Friendship >── User                    # 🆕 Bạn bè
+         │
+         └── FriendshipStatus (PENDING, ACCEPTED, REJECTED)
+
 User ──< FamilyMember >── Family
          │
          └── FamilyRole (LEADER, MEMBER)
+
+User ──< FamilyInvitation >── Family            # 🆕 Lời mời gia đình
+         │
+         └── InvitationStatus (PENDING, ACCEPTED, REJECTED)
 
 Family ──< ShoppingList ──< ShoppingItem
                            │
@@ -296,11 +731,12 @@ MasterProduct ──< ProductCategory >── Category
 
 ### API Công Khai
 
-- `/api/v1/auth/**` - Xác thực
+- `/api/v1/auth/login`, `/api/v1/auth/register`, `/api/v1/auth/refresh` - Xác thực
 - `/swagger-ui/**`, `/api-docs/**` - Tài liệu API
 - `GET /api/v1/categories/**` - Danh sách danh mục
 - `GET /api/v1/master-products/**` - Danh sách sản phẩm
 - `GET /api/v1/recipes/**` - Danh sách công thức
+- `GET /files/**` - Phục vụ file tĩnh (ảnh gia đình, v.v.) 🆕
 
 ### API Yêu Cầu Xác Thực
 
@@ -378,20 +814,48 @@ fun updateExpiredItemsStatus() {
 | PATCH | `/api/v1/auth/me` | Cập nhật hồ sơ |
 | POST | `/api/v1/auth/change-password` | Đổi mật khẩu |
 
+### Người Dùng
+| Phương thức | Endpoint | Mô tả |
+|--------|----------|-------------|
+| GET | `/api/v1/users/search?keyword=` | Tìm kiếm người dùng |
+| GET | `/api/v1/users/{id}` | Lấy thông tin user |
+
+### Bạn Bè 🆕
+| Phương thức | Endpoint | Mô tả |
+|--------|----------|-------------|
+| POST | `/api/v1/friends/request/{userId}` | Gửi lời mời kết bạn |
+| GET | `/api/v1/friends/pending` | Lấy lời mời đang chờ |
+| POST | `/api/v1/friends/respond/{friendshipId}` | Chấp nhận/từ chối lời mời |
+| GET | `/api/v1/friends` | Lấy danh sách bạn bè |
+| DELETE | `/api/v1/friends/{friendId}` | Hủy kết bạn |
+| GET | `/api/v1/friends/status/{userId}` | Kiểm tra trạng thái bạn bè |
+
 ### Gia Đình
 | Phương thức | Endpoint | Mô tả |
 |--------|----------|-------------|
-| POST | `/api/v1/families` | Tạo gia đình |
+| POST | `/api/v1/families` | Tạo gia đình (multipart, mời bạn bè) 🆕 |
 | POST | `/api/v1/families/join` | Tham gia bằng mã mời |
 | GET | `/api/v1/families` | Lấy danh sách gia đình của tôi |
 | GET | `/api/v1/families/{id}` | Lấy chi tiết gia đình |
 | GET | `/api/v1/families/{id}/members` | Lấy danh sách thành viên |
-| PUT | `/api/v1/families/{id}` | Cập nhật gia đình |
+| PUT | `/api/v1/families/{id}` | Cập nhật gia đình (multipart) 🆕 |
 | PATCH | `/api/v1/families/{familyId}/members/{userId}` | Cập nhật thành viên |
 | DELETE | `/api/v1/families/{familyId}/members/{userId}` | Xóa thành viên |
 | POST | `/api/v1/families/{id}/leave` | Rời gia đình |
 | POST | `/api/v1/families/{id}/regenerate-invite-code` | Tạo mã mời mới |
 | DELETE | `/api/v1/families/{id}` | Xóa gia đình |
+
+### Lời Mời Gia Đình 🆕
+| Phương thức | Endpoint | Mô tả |
+|--------|----------|-------------|
+| GET | `/api/v1/families/invitations` | Lấy lời mời đang chờ |
+| POST | `/api/v1/families/invitations/{id}/respond` | Chấp nhận/từ chối lời mời |
+| POST | `/api/v1/families/{familyId}/invite/{friendId}` | Mời bạn bè vào gia đình |
+
+### File 🆕
+| Phương thức | Endpoint | Mô tả |
+|--------|----------|-------------|
+| GET | `/files/{path}` | Lấy file (public, không cần auth) |
 
 ### Danh Sách Mua Sắm
 | Phương thức | Endpoint | Mô tả |
