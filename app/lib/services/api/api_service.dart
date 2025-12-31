@@ -74,6 +74,38 @@ class ApiService {
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
+  Future<UserInfo> getCurrentUser() async {
+    try {
+      final response = await _dio.get(ApiConfig.me);
+      return UserInfo.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<UserInfo> uploadUserAvatar(XFile image) async {
+    try {
+      final bytes = await image.readAsBytes();
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: image.name,
+        ),
+      });
+      final response = await _dio.post(
+        ApiConfig.userAvatar,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return UserInfo.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<UserInfo> deleteUserAvatar() async {
+    try {
+      final response = await _dio.delete(ApiConfig.userAvatar);
+      return UserInfo.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
   // --- Friend APIs ---
   Future<List<UserInfo>> getFriends() async {
     try {

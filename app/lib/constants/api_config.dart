@@ -45,6 +45,8 @@ class ApiConfig {
   // --- Auth & User ---
   static const String login = '/auth/login';
   static const String register = '/auth/register';
+  static const String me = '/auth/me';
+  static const String userAvatar = '/auth/me/avatar';
   static const String userSearch = '/users/search';
 
   // --- Friend Endpoints ---
