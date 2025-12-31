@@ -27,6 +27,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> register({
+    required String fullName,
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _apiService.register(
+        fullName: fullName,
+        username: username,
+        email: email,
+        password: password,
+      );
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   Future<void> login({required String username, required String password, String? deviceToken}) async {
     _isLoading = true;
     notifyListeners(); // Notify UI that loading has started.

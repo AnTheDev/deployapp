@@ -39,6 +39,22 @@ class ApiService {
   }
 
   // --- Auth & User ---
+  Future<void> register({
+    required String fullName,
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _dio.post(ApiConfig.register, data: {
+        'fullName': fullName,
+        'username': username,
+        'email': email,
+        'password': password,
+      });
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
   Future<LoginData> login({required String username, required String password, String? deviceToken}) async {
     try {
       final response = await _dio.post(ApiConfig.login, data: {'username': username, 'password': password, if (deviceToken != null) 'device_token': deviceToken});
