@@ -9,12 +9,14 @@ class RecipeProvider extends BaseProvider {
 
   List<Recipe> _recipes = [];
   Recipe? _selectedRecipe;
+  RecipeDetail? _selectedRecipeDetail;
   int _currentPage = 0;
   bool _isLoadingMore = false;
   bool _hasMore = true;
 
   List<Recipe> get recipes => _recipes;
   Recipe? get selectedRecipe => _selectedRecipe;
+  RecipeDetail? get selectedRecipeDetail => _selectedRecipeDetail;
   bool get isLoadingMore => _isLoadingMore;
 
   Future<void> fetchRecipes({bool isRefresh = false}) async {
@@ -58,7 +60,7 @@ class RecipeProvider extends BaseProvider {
   Future<void> fetchRecipeById(int id) async {
     setStatus(ViewStatus.Loading);
     try {
-      _selectedRecipe = await _apiService.getRecipeById(id);
+      _selectedRecipeDetail = await _apiService.getRecipeById(id);
     } finally {
       setStatus(ViewStatus.Ready);
     }

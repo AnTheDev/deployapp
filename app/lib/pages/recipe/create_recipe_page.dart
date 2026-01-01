@@ -248,7 +248,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
               const SizedBox(height: 24),
               _buildTextField(label: 'Các bước làm *', controller: _stepsController, hint: 'Bước 1: ...\nBước 2: ...\nBước 3: ...', maxLines: 5),
               const SizedBox(height: 24),
-              _buildTextField(label: 'Ghi chú', controller: _notesController, hint: 'Các lưu ý (không bắt buộc)...', maxLines: 3, required: false),
+              _buildTextField(label: 'Ghi chú', controller: _notesController, hint: 'Các lưu ý (Loại thịt, Lượng nguyên liệu cần thiết như: 500g thịt bò, 2 quả trứng, v.v.)...', maxLines: 3, required: false),
               const SizedBox(height: 48),
               _isLoading
                   ? const Center(child: CircularProgressIndicator())

@@ -67,10 +67,15 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
       ),
       body: Consumer<RecipeProvider>(
         builder: (context, recipeProvider, child) {
-          final recipeToDisplay = recipeProvider.selectedRecipe ?? widget.recipe;
+          final recipeDetail = recipeProvider.selectedRecipeDetail;
 
-          if (recipeProvider.viewStatus == ViewStatus.Loading && recipeProvider.selectedRecipe == null) {
+          if (recipeProvider.viewStatus == ViewStatus.Loading && recipeDetail == null) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          // Use detail if available, otherwise fall back to basic recipe
+          if (recipeDetail == null) {
+            return const Center(child: Text('Không thể tải chi tiết công thức'));
           }
 
           return SingleChildScrollView(
@@ -79,11 +84,11 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: recipeToDisplay.imageUrl != null
+                  child: recipeDetail.imageUrl != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Image.network(
-                            recipeToDisplay.imageUrl!,
+                            recipeDetail.imageUrl!,
                             width: 200,
                             height: 200,
                             fit: BoxFit.cover,
@@ -109,20 +114,20 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                         ),
                 ),
                 const SizedBox(height: 24),
-                Center(child: Text(recipeToDisplay.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24), textAlign: TextAlign.center)),
+                Center(child: Text(recipeDetail.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24), textAlign: TextAlign.center)),
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'bởi ${recipeToDisplay.createdBy.fullName}',
+                    'bởi ${recipeDetail.createdBy.fullName}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ),
                 const SizedBox(height: 16),
-                if (recipeToDisplay.description.isNotEmpty)
+                if (recipeDetail.description.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      recipeToDisplay.description,
+                      recipeDetail.description,
                       style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.5),
                       textAlign: TextAlign.center,
                     ),
@@ -131,28 +136,26 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildInfoCard(Icons.people, 'Phần ăn', '${recipeToDisplay.serves ?? 0}'),
-                    _buildInfoCard(Icons.schedule, 'Chuẩn bị', '${recipeToDisplay.prepTime ?? 0} ph'),
-                    _buildInfoCard(Icons.timer, 'Nấu', '${recipeToDisplay.cookTime ?? 0} ph'),
-                    _buildDifficultyCard(recipeToDisplay.difficulty),
+                    _buildInfoCard(Icons.people, 'Phần ăn', '${recipeDetail.serves ?? 0}'),
+                    _buildInfoCard(Icons.schedule, 'Chuẩn bị', '${recipeDetail.prepTime ?? 0} ph'),
+                    _buildInfoCard(Icons.timer, 'Nấu', '${recipeDetail.cookTime ?? 0} ph'),
+                    _buildDifficultyCard(recipeDetail.difficulty),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSectionTitle('Danh sách nguyên liệu', Icons.shopping_basket),
                 const SizedBox(height: 8),
-                _buildBulletList(recipeToDisplay.ingredients ?? []),
+                _buildIngredientsList(recipeDetail.ingredients),
                 const Divider(height: 40, thickness: 1),
                 _buildSectionTitle('Cách làm', Icons.format_list_numbered),
                 const SizedBox(height: 8),
-                _buildBulletList(recipeToDisplay.steps ?? [], isNumbered: true),
-                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
-                  const Divider(height: 40, thickness: 1),
-                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
-                  _buildSectionTitle('Ghi chú', Icons.note),
-                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
-                  const SizedBox(height: 8),
-                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
-                  _buildBulletList(recipeToDisplay.notes!),
+                if (recipeDetail.steps != null && recipeDetail.steps!.isNotEmpty)
+                  _buildBulletList(recipeDetail.steps!, isNumbered: true)
+                else
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16.0),
+                    child: Text('Chưa có hướng dẫn', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
+                  ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -169,6 +172,36 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
         const SizedBox(width: 8),
         Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
       ],
+    );
+  }
+
+  Widget _buildIngredientsList(List<RecipeIngredient> ingredients) {
+    if (ingredients.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(left: 16.0),
+        child: Text('Chưa có nguyên liệu', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
+      );
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: ingredients.map((ingredient) {
+          final name = ingredient.customIngredientName ?? ingredient.ingredientName;
+          final quantityText = '${ingredient.quantity} ${ingredient.unit}';
+          final noteText = ingredient.note != null && ingredient.note!.isNotEmpty ? ' (${ingredient.note})' : '';
+          final optionalText = ingredient.isOptional ? ' [Tùy chọn]' : '';
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Text(
+              '• $name - $quantityText$noteText$optionalText',
+              style: const TextStyle(fontSize: 16, height: 1.5),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
