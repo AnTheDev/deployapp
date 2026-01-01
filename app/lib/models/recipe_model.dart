@@ -27,7 +27,7 @@ class Recipe {
   final String title;
   final String description;
   final String? imageUrl;
-  // FIX: Allow numeric fields to be nullable and provide default values.
+  @JsonKey(name: 'servings')
   final int? serves;
   final int? prepTime;
   final int? cookTime;
@@ -35,10 +35,7 @@ class Recipe {
   final bool isPublic;
   final UserSimpleResponse createdBy;
   final String createdAt;
-
-  final List<String>? ingredients;
-  final List<String>? steps;
-  final List<String>? notes;
+  final String? instructions;
 
   const Recipe({
     required this.id,
@@ -52,11 +49,81 @@ class Recipe {
     required this.isPublic,
     required this.createdBy,
     required this.createdAt,
-    this.ingredients,
-    this.steps,
-    this.notes,
+    this.instructions,
   });
+
+  // Helper getters to parse backend data
+  List<String>? get steps {
+    if (instructions == null || instructions!.isEmpty) return null;
+    return instructions!.split('\n').where((s) => s.trim().isNotEmpty).toList();
+  }
 
   factory Recipe.fromJson(Map<String, dynamic> json) => _$RecipeFromJson(json);
   Map<String, dynamic> toJson() => _$RecipeToJson(this);
+}
+
+@JsonSerializable()
+class RecipeIngredient {
+  final int id;
+  final String ingredientName;
+  final String? customIngredientName;
+  final double quantity;
+  final String unit;
+  final String? note;
+  final bool isOptional;
+
+  const RecipeIngredient({
+    required this.id,
+    required this.ingredientName,
+    this.customIngredientName,
+    required this.quantity,
+    required this.unit,
+    this.note,
+    required this.isOptional,
+  });
+
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) => _$RecipeIngredientFromJson(json);
+  Map<String, dynamic> toJson() => _$RecipeIngredientToJson(this);
+}
+
+@JsonSerializable()
+class RecipeDetail {
+  final int id;
+  final String title;
+  final String description;
+  final String? imageUrl;
+  @JsonKey(name: 'servings')
+  final int? serves;
+  final int? prepTime;
+  final int? cookTime;
+  final Difficulty difficulty;
+  final bool isPublic;
+  final UserSimpleResponse createdBy;
+  final String createdAt;
+  final String? instructions;
+  final List<RecipeIngredient> ingredients;
+
+  const RecipeDetail({
+    required this.id,
+    required this.title,
+    required this.description,
+    this.imageUrl,
+    this.serves = 0,
+    this.prepTime = 0,
+    this.cookTime = 0,
+    required this.difficulty,
+    required this.isPublic,
+    required this.createdBy,
+    required this.createdAt,
+    this.instructions,
+    required this.ingredients,
+  });
+
+  List<String>? get steps {
+    if (instructions == null || instructions!.isEmpty) return null;
+    return instructions!.split('\n').where((s) => s.trim().isNotEmpty).toList();
+  }
+
+  factory RecipeDetail.fromJson(Map<String, dynamic> json) => _$RecipeDetailFromJson(json);
+  Map<String, dynamic> toJson() => _$RecipeDetailToJson(this);
 }

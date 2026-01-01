@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/providers/recipe_provider.dart';
+import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/models/recipe_model.dart';
+import 'package:flutter_boilerplate/models/family_model.dart';
 import 'recipe_detail_page.dart';
 import 'create_recipe_page.dart';
 
-class RecipeListPage extends StatefulWidget {
-  const RecipeListPage({Key? key}) : super(key: key);
+class FamilyRecipeListPage extends StatefulWidget {
+  final Family family;
+
+  const FamilyRecipeListPage({Key? key, required this.family}) : super(key: key);
 
   @override
-  _RecipeListPageState createState() => _RecipeListPageState();
+  _FamilyRecipeListPageState createState() => _FamilyRecipeListPageState();
 }
 
-class _RecipeListPageState extends State<RecipeListPage> {
+class _FamilyRecipeListPageState extends State<FamilyRecipeListPage> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _sortBy = 'latest'; // latest, title
 
   @override
   void initState() {
     super.initState();
     final recipeProvider = context.read<RecipeProvider>();
+    final familyProvider = context.read<FamilyProvider>();
     
+    // Load family members and recipes
+    familyProvider.fetchFamilyMembers(widget.family.id);
     recipeProvider.fetchRecipes(isRefresh: true);
 
     _scrollController.addListener(() {
@@ -40,6 +46,14 @@ class _RecipeListPageState extends State<RecipeListPage> {
     super.dispose();
   }
 
+  List<Recipe> _filterRecipesByFamily(List<Recipe> recipes, List<FamilyMember> members) {
+    // Get all member IDs from the family
+    final memberIds = members.map((m) => m.id).toSet();
+    
+    // Filter recipes created by family members
+    return recipes.where((recipe) => memberIds.contains(recipe.createdBy.id)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,9 +61,21 @@ class _RecipeListPageState extends State<RecipeListPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text('Thực Đơn', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Công thức nấu ăn', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(
+              widget.family.name,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+        centerTitle: false,
       ),
       body: Column(
         children: [
@@ -69,7 +95,6 @@ class _RecipeListPageState extends State<RecipeListPage> {
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
-                                context.read<RecipeProvider>().fetchRecipes(isRefresh: true);
                               },
                             )
                           : null,
@@ -83,22 +108,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
                     onChanged: (value) {
                       setState(() => _searchQuery = value);
                     },
-                    onSubmitted: (value) {
-                      // Implement search API call here when available
-                      setState(() {});
-                    },
                   ),
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.filter_list),
-                  onSelected: (value) {
-                    setState(() => _sortBy = value);
-                    // Implement sort functionality
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'latest', child: Row(children: [Icon(Icons.access_time), SizedBox(width: 8), Text('Mới nhất')])),
-                    const PopupMenuItem(value: 'title', child: Row(children: [Icon(Icons.sort_by_alpha), SizedBox(width: 8), Text('Tên A-Z')])),
-                  ],
                 ),
               ],
             ),
@@ -106,39 +116,81 @@ class _RecipeListPageState extends State<RecipeListPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Danh sách thực đơn', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 18)),
-                IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.black, size: 30),
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateRecipePage()));
-                  },
+                Icon(Icons.group, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Công thức từ thành viên trong nhóm',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 8),
           Expanded(
-            child: Consumer<RecipeProvider>(
-              builder: (context, provider, child) {
-                if (provider.viewStatus == ViewStatus.Loading && provider.recipes.isEmpty) {
+            child: Consumer2<RecipeProvider, FamilyProvider>(
+              builder: (context, recipeProvider, familyProvider, child) {
+                if (recipeProvider.viewStatus == ViewStatus.Loading && recipeProvider.recipes.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (provider.recipes.isEmpty) {
-                  return const Center(child: Text('Không có công thức nào.'));
+
+                // Filter recipes by family members
+                final familyRecipes = _filterRecipesByFamily(recipeProvider.recipes, familyProvider.members);
+
+                if (familyRecipes.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.restaurant_menu, size: 80, color: Colors.grey[300]),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Chưa có công thức nào',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Các thành viên trong nhóm chưa chia sẻ công thức nào',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const CreateRecipePage()),
+                            );
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Tạo công thức mới'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF26F21),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 return RefreshIndicator(
-                  onRefresh: () => provider.fetchRecipes(isRefresh: true),
+                  onRefresh: () => recipeProvider.fetchRecipes(isRefresh: true),
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.only(top: 8.0),
-                    itemCount: provider.recipes.length + 1,
+                    itemCount: familyRecipes.length + 1,
                     itemBuilder: (context, index) {
-                      if (index == provider.recipes.length) {
-                        return provider.isLoadingMore ? const Center(child: CircularProgressIndicator()) : const SizedBox.shrink();
+                      if (index == familyRecipes.length) {
+                        return recipeProvider.isLoadingMore 
+                            ? const Center(child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(),
+                              ))
+                            : const SizedBox.shrink();
                       }
-                      final recipe = provider.recipes[index];
+                      
+                      final recipe = familyRecipes[index];
                       
                       // Filter by search query
                       if (_searchQuery.isNotEmpty && 
@@ -152,7 +204,9 @@ class _RecipeListPageState extends State<RecipeListPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                         elevation: 2,
                         child: InkWell(
-                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RecipeDetailPage(recipe: recipe))),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => RecipeDetailPage(recipe: recipe)),
+                          ),
                           borderRadius: BorderRadius.circular(12.0),
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
@@ -230,6 +284,15 @@ class _RecipeListPageState extends State<RecipeListPage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CreateRecipePage()),
+          );
+        },
+        backgroundColor: const Color(0xFFF26F21),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

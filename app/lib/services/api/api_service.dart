@@ -502,10 +502,10 @@ class ApiService {
     }
   }
 
-  Future<Recipe> getRecipeById(int id) async {
+  Future<RecipeDetail> getRecipeById(int id) async {
     try {
       final response = await _dio.get(ApiConfig.recipeById(id));
-      return Recipe.fromJson(response.data['data']);
+      return RecipeDetail.fromJson(response.data['data']);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

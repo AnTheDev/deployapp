@@ -9,6 +9,8 @@ import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/pages/shopping/shopping_list_page.dart';
 import 'package:flutter_boilerplate/pages/meal_plan/meal_plan_page.dart';
+import 'package:flutter_boilerplate/pages/recipe/family_recipe_list_page.dart';
+import 'package:flutter_boilerplate/pages/fridge/fridge_page.dart';
 import 'package:flutter_boilerplate/services/api/api_service.dart';
 import 'package:flutter_boilerplate/services/locator.dart';
 import 'package:flutter_boilerplate/constants/api_config.dart';
@@ -194,28 +196,22 @@ class _FamilyDetailPageState extends State<FamilyDetailPage> {
     );
   }
 
-  void _showExpenseReport(Family family) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Báo cáo chi tiêu'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.pie_chart, size: 80, color: Colors.orange),
-            const SizedBox(height: 16),
-            Text(
-              'Chức năng này đang được phát triển',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng'),
-          ),
-        ],
+  void _navigateToRecipes(Family family) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FamilyRecipeListPage(family: family),
+      ),
+    );
+  }
+
+  void _navigateToFridge(Family family) {
+    // Select the family first, then navigate to fridge page
+    context.read<FamilyProvider>().selectFamily(family.id);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const FridgePage(),
       ),
     );
   }
@@ -462,10 +458,10 @@ class _FamilyDetailPageState extends State<FamilyDetailPage> {
                         onTap: () => _navigateToShoppingList(family),
                       ),
                       _buildActionButton(
-                        icon: Icons.pie_chart,
-                        text: 'Báo cáo chi tiêu',
+                        icon: Icons.restaurant_menu,
+                        text: 'Công thức nấu ăn',
                         color: orangeColor,
-                        onTap: () => _showExpenseReport(family),
+                        onTap: () => _navigateToRecipes(family),
                       ),
                       _buildActionButton(
                         icon: Icons.calendar_month,
@@ -496,12 +492,7 @@ class _FamilyDetailPageState extends State<FamilyDetailPage> {
                       title: const Text('Tủ lạnh của nhóm'),
                       subtitle: const Text('Quản lý thực phẩm'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        // TODO: Navigate to Fridge page
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Chức năng đang phát triển')),
-                        );
-                      },
+                      onTap: () => _navigateToFridge(family),
                     ),
                   ),
 

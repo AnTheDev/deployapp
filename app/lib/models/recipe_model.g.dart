@@ -25,7 +25,7 @@ Recipe _$RecipeFromJson(Map<String, dynamic> json) => Recipe(
       title: json['title'] as String,
       description: json['description'] as String,
       imageUrl: json['imageUrl'] as String?,
-      serves: (json['serves'] as num?)?.toInt() ?? 0,
+      serves: (json['servings'] as num?)?.toInt() ?? 0,
       prepTime: (json['prepTime'] as num?)?.toInt() ?? 0,
       cookTime: (json['cookTime'] as num?)?.toInt() ?? 0,
       difficulty: $enumDecode(_$DifficultyEnumMap, json['difficulty']),
@@ -33,13 +33,7 @@ Recipe _$RecipeFromJson(Map<String, dynamic> json) => Recipe(
       createdBy: UserSimpleResponse.fromJson(
           json['createdBy'] as Map<String, dynamic>),
       createdAt: json['createdAt'] as String,
-      ingredients: (json['ingredients'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-      steps:
-          (json['steps'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      notes:
-          (json['notes'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      instructions: json['instructions'] as String?,
     );
 
 Map<String, dynamic> _$RecipeToJson(Recipe instance) => <String, dynamic>{
@@ -47,16 +41,14 @@ Map<String, dynamic> _$RecipeToJson(Recipe instance) => <String, dynamic>{
       'title': instance.title,
       'description': instance.description,
       'imageUrl': instance.imageUrl,
-      'serves': instance.serves,
+      'servings': instance.serves,
       'prepTime': instance.prepTime,
       'cookTime': instance.cookTime,
       'difficulty': _$DifficultyEnumMap[instance.difficulty]!,
       'isPublic': instance.isPublic,
       'createdBy': instance.createdBy,
       'createdAt': instance.createdAt,
-      'ingredients': instance.ingredients,
-      'steps': instance.steps,
-      'notes': instance.notes,
+      'instructions': instance.instructions,
     };
 
 const _$DifficultyEnumMap = {
@@ -64,3 +56,61 @@ const _$DifficultyEnumMap = {
   Difficulty.MEDIUM: 'MEDIUM',
   Difficulty.HARD: 'HARD',
 };
+
+RecipeIngredient _$RecipeIngredientFromJson(Map<String, dynamic> json) =>
+    RecipeIngredient(
+      id: (json['id'] as num).toInt(),
+      ingredientName: json['ingredientName'] as String,
+      customIngredientName: json['customIngredientName'] as String?,
+      quantity: (json['quantity'] as num).toDouble(),
+      unit: json['unit'] as String,
+      note: json['note'] as String?,
+      isOptional: json['isOptional'] as bool,
+    );
+
+Map<String, dynamic> _$RecipeIngredientToJson(RecipeIngredient instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'ingredientName': instance.ingredientName,
+      'customIngredientName': instance.customIngredientName,
+      'quantity': instance.quantity,
+      'unit': instance.unit,
+      'note': instance.note,
+      'isOptional': instance.isOptional,
+    };
+
+RecipeDetail _$RecipeDetailFromJson(Map<String, dynamic> json) => RecipeDetail(
+      id: (json['id'] as num).toInt(),
+      title: json['title'] as String,
+      description: json['description'] as String,
+      imageUrl: json['imageUrl'] as String?,
+      serves: (json['servings'] as num?)?.toInt() ?? 0,
+      prepTime: (json['prepTime'] as num?)?.toInt() ?? 0,
+      cookTime: (json['cookTime'] as num?)?.toInt() ?? 0,
+      difficulty: $enumDecode(_$DifficultyEnumMap, json['difficulty']),
+      isPublic: json['isPublic'] as bool,
+      createdBy: UserSimpleResponse.fromJson(
+          json['createdBy'] as Map<String, dynamic>),
+      createdAt: json['createdAt'] as String,
+      instructions: json['instructions'] as String?,
+      ingredients: (json['ingredients'] as List<dynamic>)
+          .map((e) => RecipeIngredient.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$RecipeDetailToJson(RecipeDetail instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'description': instance.description,
+      'imageUrl': instance.imageUrl,
+      'servings': instance.serves,
+      'prepTime': instance.prepTime,
+      'cookTime': instance.cookTime,
+      'difficulty': _$DifficultyEnumMap[instance.difficulty]!,
+      'isPublic': instance.isPublic,
+      'createdBy': instance.createdBy,
+      'createdAt': instance.createdAt,
+      'instructions': instance.instructions,
+      'ingredients': instance.ingredients,
+    };
