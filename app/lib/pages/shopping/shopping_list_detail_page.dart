@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/models/shopping_list_model.dart';
+import 'package:flutter_boilerplate/models/product_model.dart';
 import 'package:flutter_boilerplate/providers/shopping_list_provider.dart';
+import 'package:flutter_boilerplate/providers/product_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 
 class ShoppingListDetailPage extends StatefulWidget {
@@ -19,11 +21,35 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   final TextEditingController _unitController = TextEditingController();
   bool _selectionMode = false;
   final Set<int> _selectedItems = {};
+  List<Category> _availableCategories = [];
+  List<Product> _availableProducts = [];
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadProductsAndCategories();
+  }
+
+  Future<void> _loadProductsAndCategories() async {
+    final productProvider = context.read<ProductProvider>();
+    await productProvider.fetchProducts(page: 0, size: 1000);
+    
+    setState(() {
+      _availableProducts = productProvider.products;
+      
+      // Extract unique categories from products
+      final categoryMap = <int, Category>{};
+      for (var product in _availableProducts) {
+        if (product.categories != null) {
+          for (var category in product.categories!) {
+            categoryMap[category.id] = category;
+          }
+        }
+      }
+      _availableCategories = categoryMap.values.toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+    });
   }
 
   @override
@@ -295,6 +321,9 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     _itemNameController.clear();
     _quantityController.text = '1';
     _unitController.clear();
+    Category? selectedCategory;
+    Product? selectedProduct;
+    bool isCustomProduct = true;
 
     showModalBottomSheet(
       context: context,
@@ -302,70 +331,159 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Thêm món mới',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          List<Product> getFilteredProducts() {
+            if (selectedCategory == null) {
+              return _availableProducts;
+            }
+            return _availableProducts.where((product) {
+              return product.categories?.any((cat) => cat.id == selectedCategory!.id) ?? false;
+            }).toList();
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 16,
+              right: 16,
+              top: 16,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _itemNameController,
-              decoration: const InputDecoration(
-                labelText: 'Tên món *',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.shopping_basket),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _quantityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Số lượng',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Thêm món mới',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: _unitController,
+                  const SizedBox(height: 16),
+                  // Chọn danh mục
+                  DropdownButtonFormField<Category>(
+                    value: selectedCategory,
                     decoration: const InputDecoration(
-                      labelText: 'Đơn vị (kg, lít, cái...)',
+                      labelText: 'Danh mục (tùy chọn)',
                       border: OutlineInputBorder(),
+                      helperText: 'Chọn danh mục để lọc món',
+                      prefixIcon: Icon(Icons.category),
                     ),
+                    items: [
+                      const DropdownMenuItem<Category>(
+                        value: null,
+                        child: Text('Tất cả danh mục'),
+                      ),
+                      ..._availableCategories.map((category) {
+                        return DropdownMenuItem<Category>(
+                          value: category,
+                          child: Text(category.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setModalState(() {
+                        selectedCategory = value;
+                        selectedProduct = null;
+                        isCustomProduct = true;
+                        _itemNameController.clear();
+                        _unitController.clear();
+                      });
+                    },
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _addItem,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                  const SizedBox(height: 12),
+                  // Chọn món có sẵn hoặc "Khác"
+                  DropdownButtonFormField<Product>(
+                    value: selectedProduct,
+                    decoration: const InputDecoration(
+                      labelText: 'Chọn món',
+                      border: OutlineInputBorder(),
+                      helperText: 'Chọn từ danh sách hoặc "Khác" để nhập tên riêng',
+                      prefixIcon: Icon(Icons.shopping_basket),
+                    ),
+                    items: [
+                      const DropdownMenuItem<Product>(
+                        value: null,
+                        child: Text('➕ Khác (nhập tên riêng)'),
+                      ),
+                      ...getFilteredProducts().map((product) {
+                        return DropdownMenuItem<Product>(
+                          value: product,
+                          child: Text(product.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setModalState(() {
+                        selectedProduct = value;
+                        if (value != null) {
+                          isCustomProduct = false;
+                          _itemNameController.text = value.name;
+                          _unitController.text = value.defaultUnit;
+                        } else {
+                          isCustomProduct = true;
+                          _itemNameController.clear();
+                          _unitController.clear();
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _itemNameController,
+                    enabled: isCustomProduct,
+                    decoration: InputDecoration(
+                      labelText: 'Tên món *',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.shopping_basket),
+                      suffixIcon: isCustomProduct ? null : const Icon(Icons.lock, size: 18),
+                    ),
+                    autofocus: isCustomProduct,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _quantityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Số lượng',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _unitController,
+                          enabled: isCustomProduct,
+                          decoration: InputDecoration(
+                            labelText: 'Đơn vị *',
+                            hintText: 'vd: kg, quả, gói...',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: isCustomProduct ? null : const Icon(Icons.lock, size: 18),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _addItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Thêm món', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              child: const Text('Thêm món', style: TextStyle(color: Colors.white)),
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
