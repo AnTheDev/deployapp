@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/models/shopping_list_model.dart';
+import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/providers/shopping_list_provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
@@ -51,6 +52,8 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
         _expandedLists.clear();
       });
       context.read<ShoppingListProvider>().fetchShoppingLists(selectedFamily.id);
+      // Fetch family members để hiển thị trong dropdown edit
+      familyProvider.fetchFamilyMembers(selectedFamily.id);
     }
   }
 
@@ -327,6 +330,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                 });
               }
             },
+            onEdit: () => _showEditDialog(list),
             onExpandToggle: () async {
               final isExpanded = _expandedLists.contains(list.id);
               if (!isExpanded && list.items == null) {
@@ -498,12 +502,159 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
       ),
     );
   }
+
+  void _showEditDialog(ShoppingList list) {
+    final nameController = TextEditingController(text: list.name);
+    final descriptionController = TextEditingController(text: list.description ?? '');
+    FamilyMember? selectedAssignee;
+    
+    // Tìm FamilyMember tương ứng với assignedTo hiện tại
+    final familyProvider = context.read<FamilyProvider>();
+    final members = familyProvider.members;
+    if (list.assignedTo != null) {
+      try {
+        selectedAssignee = members.firstWhere((m) => m.id == list.assignedTo!.id);
+      } catch (_) {
+        // Không tìm thấy member
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Sửa danh sách'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên danh sách *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mô tả (không bắt buộc)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<FamilyMember?>(
+                  value: selectedAssignee,
+                  decoration: const InputDecoration(
+                    labelText: 'Phân công cho',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem<FamilyMember?>(
+                      value: null,
+                      child: Text('Không phân công'),
+                    ),
+                    ...members.map((member) => DropdownMenuItem<FamilyMember?>(
+                      value: member,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.green.withOpacity(0.2),
+                            backgroundImage: member.avatarUrl != null
+                                ? NetworkImage(member.avatarUrl!)
+                                : null,
+                            child: member.avatarUrl == null
+                                ? Text(
+                                    member.fullName.isNotEmpty
+                                        ? member.fullName[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(fontSize: 10, color: Colors.green),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              member.fullName,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedAssignee = value;
+                    });
+                  },
+                  isExpanded: true,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng nhập tên danh sách')),
+                  );
+                  return;
+                }
+                
+                Navigator.pop(context);
+                
+                final provider = context.read<ShoppingListProvider>();
+                final result = await provider.updateShoppingList(
+                  listId: list.id,
+                  version: list.version ?? 0,
+                  name: name,
+                  description: descriptionController.text.trim().isEmpty 
+                      ? null 
+                      : descriptionController.text.trim(),
+                  assignedToId: selectedAssignee?.id,
+                );
+                
+                if (result != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cập nhật thành công'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(provider.errorMessage ?? 'Có lỗi xảy ra'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Lưu', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ShoppingListCard extends StatelessWidget {
   final ShoppingList shoppingList;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onEdit;
   final bool selectionMode;
   final bool isSelected;
   final bool isExpanded;
@@ -515,6 +666,7 @@ class _ShoppingListCard extends StatelessWidget {
     required this.shoppingList,
     required this.onTap,
     this.onLongPress,
+    this.onEdit,
     this.selectionMode = false,
     this.isSelected = false,
     this.isExpanded = false,
@@ -607,6 +759,56 @@ class _ShoppingListCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              // Hiển thị người tạo và người được phân công
+              if (shoppingList.createdBy != null || shoppingList.assignedTo != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          if (shoppingList.createdBy != null)
+                            _buildPersonChip(
+                              Icons.person_outline,
+                              'Tạo bởi: ${shoppingList.createdBy!.fullName ?? shoppingList.createdBy!.email}',
+                              Colors.blue,
+                            ),
+                          if (shoppingList.assignedTo != null)
+                            _buildPersonChip(
+                              Icons.assignment_ind_outlined,
+                              'Phân công: ${shoppingList.assignedTo!.fullName ?? shoppingList.assignedTo!.email}',
+                              Colors.orange,
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (!selectionMode && onEdit != null)
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        color: Colors.grey[600],
+                        onPressed: onEdit,
+                        tooltip: 'Sửa thông tin',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ] else if (!selectionMode && onEdit != null) ...[
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    color: Colors.grey[600],
+                    onPressed: onEdit,
+                    tooltip: 'Sửa thông tin',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+              ],
               Row(
                 children: [
                   _buildInfoChip(
@@ -707,13 +909,34 @@ class _ShoppingListCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              item.name,
-              style: TextStyle(
-                fontSize: 13,
-                decoration: item.isBought ? TextDecoration.lineThrough : null,
-                color: item.isBought ? Colors.grey : Colors.black87,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    decoration: item.isBought ? TextDecoration.lineThrough : null,
+                    color: item.isBought ? Colors.grey : Colors.black87,
+                  ),
+                ),
+                if (item.assignedTo != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 12, color: Colors.orange[400]),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.assignedTo!.fullName ?? item.assignedTo!.email ?? 'Unknown',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange[400],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
           Text(
@@ -743,6 +966,31 @@ class _ShoppingListCard extends StatelessWidget {
           Text(
             text,
             style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 11, color: color),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

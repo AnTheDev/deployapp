@@ -79,6 +79,7 @@ class ShoppingListProvider extends BaseProvider {
     required int familyId,
     required String name,
     String? description,
+    int? assignedToId,
     List<CreateShoppingItemRequest>? items,
   }) async {
     _errorMessage = null;
@@ -87,6 +88,7 @@ class ShoppingListProvider extends BaseProvider {
         'familyId': familyId,
         'name': name,
         if (description != null) 'description': description,
+        if (assignedToId != null) 'assignedToId': assignedToId,
         if (items != null) 'items': items.map((e) => e.toJson()).toList(),
       };
       final newList = await _apiService.createShoppingList(data);
@@ -119,6 +121,39 @@ class ShoppingListProvider extends BaseProvider {
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
+    }
+  }
+
+  // Update shopping list (name, description, assignedTo)
+  Future<ShoppingList?> updateShoppingList({
+    required int listId,
+    required int version,
+    String? name,
+    String? description,
+    int? assignedToId,
+  }) async {
+    _errorMessage = null;
+    try {
+      final data = <String, dynamic>{
+        'version': version,
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+        if (assignedToId != null) 'assignedToId': assignedToId,
+      };
+      final updatedList = await _apiService.updateShoppingList(listId, data);
+      final index = _shoppingLists.indexWhere((list) => list.id == listId);
+      if (index != -1) {
+        _shoppingLists[index] = updatedList;
+      }
+      if (_currentShoppingList?.id == listId) {
+        _currentShoppingList = updatedList;
+      }
+      notifyListeners();
+      return updatedList;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
     }
   }
 

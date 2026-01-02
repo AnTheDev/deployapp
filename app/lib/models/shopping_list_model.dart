@@ -15,6 +15,7 @@ class ShoppingList {
   final ShoppingListStatus status;
   final int? version;
   final UserInfo? createdBy;
+  final UserInfo? assignedTo;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<ShoppingItem>? items;
@@ -33,6 +34,7 @@ class ShoppingList {
     required this.status,
     this.version,
     this.createdBy,
+    this.assignedTo,
     this.createdAt,
     this.updatedAt,
     this.items,
@@ -84,12 +86,14 @@ class CreateShoppingListRequest {
   final int familyId;
   final String name;
   final String? description;
+  final int? assignedToId;
   final List<CreateShoppingItemRequest>? items;
 
   CreateShoppingListRequest({
     required this.familyId,
     required this.name,
     this.description,
+    this.assignedToId,
     this.items,
   });
 

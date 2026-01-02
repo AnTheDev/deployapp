@@ -36,11 +36,20 @@ class ShoppingListService(
         val user = userRepository.findById(currentUser.id)
             .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
+        val assignedTo = request.assignedToId?.let {
+            val assignedUser = userRepository.findById(it)
+                .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+            // Verify assigned user is a member of the family
+            checkFamilyMembership(request.familyId, it)
+            assignedUser
+        }
+
         val shoppingList = ShoppingList(
             family = family,
             name = request.name,
             description = request.description,
-            createdBy = user
+            createdBy = user,
+            assignedTo = assignedTo
         )
 
         val savedList = shoppingListRepository.save(shoppingList)
@@ -84,6 +93,13 @@ class ShoppingListService(
         request.name?.let { list.name = it }
         request.description?.let { list.description = it }
         request.status?.let { list.status = it }
+        request.assignedToId?.let { assignedToId ->
+            val assignedUser = userRepository.findById(assignedToId)
+                .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+            // Verify assigned user is a member of the family
+            checkFamilyMembership(list.family.id!!, assignedToId)
+            list.assignedTo = assignedUser
+        }
 
         val savedList = shoppingListRepository.save(list)
         return toDetailResponse(savedList)
@@ -236,6 +252,13 @@ class ShoppingListService(
                 username = list.createdBy.username,
                 fullName = list.createdBy.fullName
             ),
+            assignedTo = list.assignedTo?.let {
+                UserSimpleResponse(
+                    id = it.id!!,
+                    username = it.username,
+                    fullName = it.fullName
+                )
+            },
             version = list.version,
             itemCount = itemCount,
             boughtCount = boughtCount,
@@ -256,6 +279,13 @@ class ShoppingListService(
                 username = list.createdBy.username,
                 fullName = list.createdBy.fullName
             ),
+            assignedTo = list.assignedTo?.let {
+                UserSimpleResponse(
+                    id = it.id!!,
+                    username = it.username,
+                    fullName = it.fullName
+                )
+            },
             version = list.version,
             items = list.items.map { toItemResponse(it) },
             createdAt = list.createdAt,
