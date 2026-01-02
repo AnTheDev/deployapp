@@ -65,9 +65,30 @@ class ExpirationNotificationScheduler(
         val expiredItems = fridgeItemRepository.findExpiredWithDetails(today)
         if (expiredItems.isNotEmpty()) {
             logger.info("Found ${expiredItems.size} expired items to update")
-            expiredItems.forEach { item ->
-                item.status = com.smartgrocery.entity.FridgeItemStatus.EXPIRED
+            
+            // Group expired items by family
+            val expiredByFamily = expiredItems.groupBy { it.family.id!! }
+            
+            expiredByFamily.forEach { (familyId, items) ->
+                val family = items.first().family
+                
+                items.forEach { item ->
+                    val notification = ExpiringItemNotification(
+                        itemId = item.id!!,
+                        productName = item.getProductName(),
+                        expirationDate = item.expirationDate!!,
+                        daysUntilExpiration = 0L,
+                        familyId = familyId,
+                        familyName = family.name
+                    )
+                    
+                    // Send expired notification for each item
+                    notificationService.sendExpiredItemNotification(familyId, notification)
+                    
+                    item.status = com.smartgrocery.entity.FridgeItemStatus.EXPIRED
+                }
             }
+            
             fridgeItemRepository.saveAll(expiredItems)
         }
 
