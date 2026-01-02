@@ -101,6 +101,7 @@ class _FridgePageState extends State<FridgePage> {
         ],
       ),      floatingActionButton: selectedFamily != null
         ? FloatingActionButton(
+            heroTag: 'fridgeFAB',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AddFridgeItemPage())
             ),

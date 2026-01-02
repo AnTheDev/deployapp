@@ -221,6 +221,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'recipeListFAB',
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateRecipePage()));
         },
