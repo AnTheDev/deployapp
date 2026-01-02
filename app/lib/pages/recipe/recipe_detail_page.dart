@@ -156,6 +156,18 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                     padding: EdgeInsets.only(left: 16.0),
                     child: Text('Chưa có hướng dẫn', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
                   ),
+                if (recipeDetail.notes != null && recipeDetail.notes!.isNotEmpty) ...[
+                  const Divider(height: 40, thickness: 1),
+                  _buildSectionTitle('Ghi chú', Icons.note),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0),
+                    child: Text(
+                      recipeDetail.notes!,
+                      style: const TextStyle(fontSize: 16, height: 1.5, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
               ],
             ),

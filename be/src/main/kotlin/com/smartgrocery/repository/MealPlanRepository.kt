@@ -16,8 +16,18 @@ interface MealPlanRepository : JpaRepository<MealPlan, Long> {
     fun findByFamilyIdAndDateWithCreatedBy(familyId: Long, date: LocalDate): List<MealPlan>
     
     fun findByFamilyIdAndDateAndMealType(familyId: Long, date: LocalDate, mealType: MealType): MealPlan?
+    
+    @Query("""
+        SELECT mp FROM MealPlan mp 
+        LEFT JOIN FETCH mp.items i 
+        LEFT JOIN FETCH mp.createdBy 
+        LEFT JOIN FETCH i.recipe r 
+        LEFT JOIN FETCH r.createdBy 
+        WHERE mp.family.id = :familyId AND mp.date = :date AND mp.mealType = :mealType
+    """)
+    fun findByFamilyIdAndDateAndMealTypeWithItems(familyId: Long, date: LocalDate, mealType: MealType): MealPlan?
 
-    @Query("SELECT mp FROM MealPlan mp LEFT JOIN FETCH mp.items LEFT JOIN FETCH mp.createdBy WHERE mp.id = :id")
+    @Query("SELECT mp FROM MealPlan mp LEFT JOIN FETCH mp.items i LEFT JOIN FETCH mp.createdBy LEFT JOIN FETCH i.recipe r LEFT JOIN FETCH r.createdBy WHERE mp.id = :id")
     fun findByIdWithItems(id: Long): MealPlan?
 
     @EntityGraph(attributePaths = ["createdBy"])
@@ -31,8 +41,10 @@ interface MealPlanRepository : JpaRepository<MealPlan, Long> {
 
     @Query("""
         SELECT DISTINCT mp FROM MealPlan mp 
-        LEFT JOIN FETCH mp.items 
+        LEFT JOIN FETCH mp.items i
         LEFT JOIN FETCH mp.createdBy
+        LEFT JOIN FETCH i.recipe r
+        LEFT JOIN FETCH r.createdBy
         WHERE mp.family.id = :familyId 
         AND mp.date BETWEEN :startDate AND :endDate 
         ORDER BY mp.date ASC

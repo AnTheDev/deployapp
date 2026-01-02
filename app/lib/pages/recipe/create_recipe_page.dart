@@ -29,7 +29,16 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   bool _isLoading = false;
   
   void _updateIngredientsDisplay() {
-    final display = _selectedIngredients.map((ing) => ing['name']).join(', ');
+    if (_selectedIngredients.isEmpty) {
+      _ingredientsDisplayController.text = '';
+      return;
+    }
+    final display = _selectedIngredients.map((ing) {
+      final name = ing['name'];
+      final quantity = ing['quantity'] ?? 1;
+      final unit = ing['unit'] ?? 'phần';
+      return '$name ($quantity $unit)';
+    }).join(', ');
     _ingredientsDisplayController.text = display;
   }
 
@@ -54,17 +63,20 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         'title': _titleController.text,
         'description': _descriptionController.text,
         'imageUrl': null,
-        'serves': int.tryParse(_servingsController.text) ?? 4,
+        'servings': int.tryParse(_servingsController.text) ?? 4,
         'prepTime': int.tryParse(_prepTimeController.text) ?? 15,
         'cookTime': int.tryParse(_cookTimeController.text) ?? 20,
         'difficulty': _selectedDifficulty.toString().split('.').last,
         'isPublic': true,
-        'instructions': _stepsController.text,  // Send as single text, not array
+        'instructions': _stepsController.text,
+        'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         'ingredients': _selectedIngredients.map((ing) => {
+          'masterProductId': ing['id'] is int ? ing['id'] : null,
           'customIngredientName': ing['name'],
-          'quantity': 1.0,
-          'unit': 'phần',
-          'isOptional': false,
+          'quantity': ing['quantity'] ?? 1.0,
+          'unit': ing['unit'] ?? 'phần',
+          'note': ing['note'],
+          'isOptional': ing['isOptional'] ?? false,
         }).toList(),
       };
 
@@ -94,6 +106,8 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       context.read<ProductProvider>().fetchProducts();
     });
     
+    final searchController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -101,7 +115,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           builder: (context, setState) {
             return Container(
               width: MediaQuery.of(context).size.width * 0.9,
-              height: MediaQuery.of(context).size.height * 0.7,
+              height: MediaQuery.of(context).size.height * 0.85,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,21 +128,108 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Tìm kiếm nguyên liệu...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onChanged: (value) {
-                      if (value.trim().isEmpty) {
-                        context.read<ProductProvider>().fetchProducts();
-                      } else {
-                        context.read<ProductProvider>().searchProducts(value);
-                      }
-                    },
+                  // Search and add custom ingredient
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Tìm hoặc nhập nguyên liệu mới...',
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          onChanged: (value) {
+                            if (value.trim().isEmpty) {
+                              context.read<ProductProvider>().fetchProducts();
+                            } else {
+                              context.read<ProductProvider>().searchProducts(value);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle, color: Color(0xFFF26F21), size: 32),
+                        tooltip: 'Thêm nguyên liệu tùy chỉnh',
+                        onPressed: () {
+                          final customName = searchController.text.trim();
+                          if (customName.isNotEmpty) {
+                            _showAddIngredientDetailDialog(
+                              customName, 
+                              null, // No product ID for custom
+                              (ingredient) {
+                                setState(() {
+                                  _selectedIngredients.add(ingredient);
+                                });
+                                this.setState(() => _updateIngredientsDisplay());
+                                searchController.clear();
+                              },
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Vui lòng nhập tên nguyên liệu')),
+                            );
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  // Selected ingredients list
+                  if (_selectedIngredients.isNotEmpty) ...[
+                    const Text('Đã chọn:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _selectedIngredients.length,
+                        itemBuilder: (context, index) {
+                          final ing = _selectedIngredients[index];
+                          final hasDetails = ing['quantity'] != null || ing['note'] != null;
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            child: ListTile(
+                              dense: true,
+                              title: Text(ing['name'], style: const TextStyle(fontWeight: FontWeight.w500)),
+                              subtitle: hasDetails 
+                                ? Text('${ing['quantity'] ?? 1} ${ing['unit'] ?? 'phần'}${ing['note'] != null ? ' - ${ing['note']}' : ''}')
+                                : null,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, size: 20),
+                                    onPressed: () => _showEditIngredientDialog(index, ing, (updated) {
+                                      setState(() {
+                                        _selectedIngredients[index] = updated;
+                                      });
+                                      this.setState(() => _updateIngredientsDisplay());
+                                    }),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedIngredients.removeAt(index);
+                                      });
+                                      this.setState(() => _updateIngredientsDisplay());
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                  ],
+                  const SizedBox(height: 8),
+                  const Text('Nguyên liệu có sẵn:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 8),
                   Expanded(
                     child: Consumer<ProductProvider>(
                       builder: (context, provider, child) {
@@ -136,7 +237,21 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                           return const Center(child: CircularProgressIndicator());
                         }
                         if (provider.products.isEmpty) {
-                          return const Center(child: Text('Không có nguyên liệu nào'));
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                                const SizedBox(height: 8),
+                                const Text('Không tìm thấy nguyên liệu'),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Nhấn nút + để thêm nguyên liệu tùy chỉnh',
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          );
                         }
                         return ListView.builder(
                           itemCount: provider.products.length,
@@ -144,20 +259,28 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                             final product = provider.products[index];
                             final isSelected = _selectedIngredients.any((ing) => ing['id'] == product.id);
                             final categoryName = product.categories?.isNotEmpty == true ? product.categories!.first.name : 'Chưa phân loại';
-                            return CheckboxListTile(
+                            return ListTile(
+                              dense: true,
                               title: Text(product.name),
                               subtitle: Text('$categoryName - ${product.defaultUnit}'),
-                              value: isSelected,
-                              onChanged: (checked) {
-                                setState(() {
-                                  if (checked == true) {
-                                    _selectedIngredients.add({'id': product.id, 'name': product.name});
-                                  } else {
-                                    _selectedIngredients.removeWhere((ing) => ing['id'] == product.id);
-                                  }
-                                });
-                                this.setState(() => _updateIngredientsDisplay());
-                              },
+                              trailing: isSelected 
+                                ? const Icon(Icons.check_circle, color: Color(0xFFF26F21))
+                                : IconButton(
+                                    icon: const Icon(Icons.add_circle_outline, color: Color(0xFFF26F21)),
+                                    onPressed: () {
+                                      _showAddIngredientDetailDialog(
+                                        product.name, 
+                                        product.id,
+                                        (ingredient) {
+                                          setState(() {
+                                            _selectedIngredients.add(ingredient);
+                                          });
+                                          this.setState(() => _updateIngredientsDisplay());
+                                        },
+                                        defaultUnit: product.defaultUnit,
+                                      );
+                                    },
+                                  ),
                             );
                           },
                         );
@@ -165,7 +288,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text('Đã chọn: ${_selectedIngredients.length} nguyên liệu', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Tổng: ${_selectedIngredients.length} nguyên liệu', style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -176,6 +299,197 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  void _showAddIngredientDetailDialog(String name, int? productId, Function(Map<String, dynamic>) onAdd, {String? defaultUnit}) {
+    final quantityController = TextEditingController(text: '1');
+    final unitController = TextEditingController(text: defaultUnit ?? 'phần');
+    final noteController = TextEditingController();
+    bool isOptional = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Thêm: $name'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: quantityController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Số lượng',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: unitController,
+                        decoration: const InputDecoration(
+                          labelText: 'Đơn vị',
+                          border: OutlineInputBorder(),
+                          hintText: 'g, ml, thìa, quả...',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú',
+                    border: OutlineInputBorder(),
+                    hintText: 'VD: thái nhỏ, băm nhuyễn...',
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  title: const Text('Tùy chọn (không bắt buộc)'),
+                  value: isOptional,
+                  onChanged: (value) => setState(() => isOptional = value ?? false),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final quantity = double.tryParse(quantityController.text) ?? 1.0;
+                final unit = unitController.text.trim();
+                if (unit.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng nhập đơn vị')),
+                  );
+                  return;
+                }
+                onAdd({
+                  'id': productId,
+                  'name': name,
+                  'quantity': quantity,
+                  'unit': unit,
+                  'note': noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                  'isOptional': isOptional,
+                });
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF26F21)),
+              child: const Text('Thêm', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditIngredientDialog(int index, Map<String, dynamic> ingredient, Function(Map<String, dynamic>) onUpdate) {
+    final quantityController = TextEditingController(text: (ingredient['quantity'] ?? 1).toString());
+    final unitController = TextEditingController(text: ingredient['unit'] ?? 'phần');
+    final noteController = TextEditingController(text: ingredient['note'] ?? '');
+    bool isOptional = ingredient['isOptional'] ?? false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Sửa: ${ingredient['name']}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: quantityController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Số lượng',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: unitController,
+                        decoration: const InputDecoration(
+                          labelText: 'Đơn vị',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú',
+                    border: OutlineInputBorder(),
+                    hintText: 'VD: thái nhỏ, băm nhuyễn...',
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  title: const Text('Tùy chọn (không bắt buộc)'),
+                  value: isOptional,
+                  onChanged: (value) => setState(() => isOptional = value ?? false),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final quantity = double.tryParse(quantityController.text) ?? 1.0;
+                final unit = unitController.text.trim();
+                if (unit.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng nhập đơn vị')),
+                  );
+                  return;
+                }
+                onUpdate({
+                  'id': ingredient['id'],
+                  'name': ingredient['name'],
+                  'quantity': quantity,
+                  'unit': unit,
+                  'note': noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                  'isOptional': isOptional,
+                });
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF26F21)),
+              child: const Text('Lưu', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
       ),
     );
@@ -248,7 +562,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
               const SizedBox(height: 24),
               _buildTextField(label: 'Các bước làm *', controller: _stepsController, hint: 'Bước 1: ...\nBước 2: ...\nBước 3: ...', maxLines: 5),
               const SizedBox(height: 24),
-              _buildTextField(label: 'Ghi chú', controller: _notesController, hint: 'Các lưu ý (Loại thịt, Lượng nguyên liệu cần thiết như: 500g thịt bò, 2 quả trứng, v.v.)...', maxLines: 3, required: false),
+              _buildTextField(label: 'Ghi chú', controller: _notesController, hint: 'Món ăn sẽ có vị chua nhẹ, Ngon hơn khi uống lạnh...', maxLines: 3, required: false),
               const SizedBox(height: 48),
               _isLoading
                   ? const Center(child: CircularProgressIndicator())

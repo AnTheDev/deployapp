@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_boilerplate/models/meal_plan_model.dart';
+import 'package:flutter_boilerplate/models/recipe_model.dart';
 import 'package:flutter_boilerplate/providers/meal_plan_provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
+import 'package:flutter_boilerplate/providers/recipe_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/pages/meal_plan/create_meal_plan_page.dart';
 
@@ -16,19 +18,13 @@ class MealPlanPage extends StatefulWidget {
 
 class _MealPlanPageState extends State<MealPlanPage> {
   DateTime _selectedDate = DateTime.now();
-  final PageController _pageController = PageController(initialPage: 500);
-  int _currentPageIndex = 500;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   void _loadData() {
@@ -39,8 +35,18 @@ class _MealPlanPageState extends State<MealPlanPage> {
     }
   }
 
-  DateTime _getDateFromPageIndex(int index) {
-    return DateTime.now().add(Duration(days: index - 500));
+  void _goToPreviousDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+    });
+    _loadDataForDate(_selectedDate);
+  }
+
+  void _goToNextDay() {
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+    _loadDataForDate(_selectedDate);
   }
 
   @override
@@ -51,6 +57,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          _buildFamilySelector(),
+        ],
       ),
       body: Column(
         children: [
@@ -75,19 +84,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
                   );
                 }
 
-                return PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPageIndex = index;
-                      _selectedDate = _getDateFromPageIndex(index);
-                    });
-                    _loadDataForDate(_selectedDate);
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildDayView(provider);
-                  },
-                );
+                return _buildDayView(provider);
               },
             ),
           ),
@@ -98,6 +95,72 @@ class _MealPlanPageState extends State<MealPlanPage> {
         backgroundColor: Colors.orange,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+    );
+  }
+
+  Widget _buildFamilySelector() {
+    return Consumer<FamilyProvider>(
+      builder: (context, familyProvider, child) {
+        final families = familyProvider.families;
+        final selectedFamily = familyProvider.selectedFamily;
+        
+        if (families.isEmpty || selectedFamily == null) {
+          return const SizedBox.shrink();
+        }
+        
+        if (families.length == 1) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.family_restroom, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  selectedFamily.name,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return PopupMenuButton<int>(
+          onSelected: (familyId) {
+            final family = families.firstWhere((f) => f.id == familyId);
+            familyProvider.setSelectedFamily(family);
+            _loadData();
+          },
+          itemBuilder: (context) => families.map((family) => PopupMenuItem<int>(
+            value: family.id,
+            child: Row(
+              children: [
+                if (family.id == selectedFamily.id)
+                  const Icon(Icons.check, color: Colors.orange, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(family.name)),
+              ],
+            ),
+          )).toList(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.family_restroom, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  selectedFamily.name,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const Icon(Icons.arrow_drop_down, size: 20),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -112,12 +175,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left, color: Colors.white),
-                onPressed: () {
-                  _pageController.previousPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
+                onPressed: _goToPreviousDay,
               ),
               GestureDetector(
                 onTap: () => _selectDate(),
@@ -145,12 +203,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right, color: Colors.white),
-                onPressed: () {
-                  _pageController.nextPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
+                onPressed: _goToNextDay,
               ),
             ],
           ),
@@ -180,8 +233,6 @@ class _MealPlanPageState extends State<MealPlanPage> {
             setState(() {
               _selectedDate = date;
             });
-            final newIndex = 500 + date.difference(DateTime.now()).inDays;
-            _pageController.jumpToPage(newIndex);
             _loadDataForDate(date);
           },
           child: Container(
@@ -319,6 +370,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () => _confirmDeleteMealItem(item, mealPlan.id, provider),
                   ),
+                  onTap: () => _showRecipeDetails(item),
                 );
               },
             ),
@@ -447,6 +499,285 @@ class _MealPlanPageState extends State<MealPlanPage> {
     );
   }
 
+  void _showRecipeDetails(MealItem item) async {
+    final recipe = item.recipe;
+    
+    if (recipe == null) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Thông báo'),
+          content: const Text('Món ăn này chưa có công thức'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Fetch recipe details
+    try {
+      await context.read<RecipeProvider>().fetchRecipeById(recipe.id);
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      final recipeDetail = context.read<RecipeProvider>().selectedRecipeDetail;
+      if (recipeDetail == null) {
+        _showErrorDialog('Không thể tải thông tin công thức');
+        return;
+      }
+
+      _showRecipeDetailDialog(item, recipeDetail);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      _showErrorDialog('Lỗi: $e');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lỗi'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRecipeDetailDialog(MealItem item, RecipeDetail recipeDetail) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.restaurant_menu, size: 28, color: Colors.orange),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      recipeDetail.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildInfoChip(Icons.people, '${item.servings} phần', Colors.orange),
+                  if (recipeDetail.prepTime != null && recipeDetail.prepTime! > 0)
+                    _buildInfoChip(Icons.schedule, '${recipeDetail.prepTime} phút chuẩn bị', Colors.blue),
+                  if (recipeDetail.cookTime != null && recipeDetail.cookTime! > 0)
+                    _buildInfoChip(Icons.timer, '${recipeDetail.cookTime} phút nấu', Colors.green),
+                  _buildInfoChip(
+                    Icons.star,
+                    recipeDetail.difficulty == Difficulty.EASY
+                        ? 'Dễ'
+                        : recipeDetail.difficulty == Difficulty.MEDIUM
+                            ? 'Trung bình'
+                            : 'Khó',
+                    Colors.amber,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    if (recipeDetail.description.isNotEmpty) ...[
+                      const Text(
+                        'Mô tả',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        recipeDetail.description,
+                        style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (recipeDetail.ingredients.isNotEmpty) ...[
+                      const Text(
+                        'Nguyên liệu',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ...recipeDetail.ingredients.map((ingredient) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 6),
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                '${ingredient.customIngredientName ?? ingredient.ingredientName} - ${ingredient.quantity} ${ingredient.unit}${ingredient.note != null ? " (${ingredient.note})" : ""}',
+                                style: const TextStyle(fontSize: 15),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                      const SizedBox(height: 20),
+                    ],
+                    if (recipeDetail.instructions != null && recipeDetail.instructions!.isNotEmpty) ...[
+                      const Text(
+                        'Cách làm',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ...recipeDetail.steps!.asMap().entries.map((entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${entry.key + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  entry.value,
+                                  style: const TextStyle(fontSize: 15, height: 1.5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                    ],
+                    if (recipeDetail.notes != null && recipeDetail.notes!.isNotEmpty) ...[
+                      const Text(
+                        'Ghi chú',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.lightbulb_outline, color: Colors.amber, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                recipeDetail.notes!,
+                                style: const TextStyle(fontSize: 15, height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmDeleteMealItem(MealItem item, int mealPlanId, MealPlanProvider provider) {
     showDialog(
       context: context,
@@ -481,8 +812,6 @@ class _MealPlanPageState extends State<MealPlanPage> {
       setState(() {
         _selectedDate = picked;
       });
-      final newIndex = 500 + picked.difference(DateTime.now()).inDays;
-      _pageController.jumpToPage(newIndex);
       _loadDataForDate(picked);
     }
   }

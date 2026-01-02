@@ -57,6 +57,7 @@ MealItem _$MealItemFromJson(Map<String, dynamic> json) => MealItem(
       recipe: json['recipe'] == null
           ? null
           : Recipe.fromJson(json['recipe'] as Map<String, dynamic>),
+      dishName: json['dishName'] as String?,
     );
 
 Map<String, dynamic> _$MealItemToJson(MealItem instance) => <String, dynamic>{
@@ -68,6 +69,7 @@ Map<String, dynamic> _$MealItemToJson(MealItem instance) => <String, dynamic>{
       'servings': instance.servings,
       'note': instance.note,
       'recipe': instance.recipe,
+      'dishName': instance.dishName,
     };
 
 CreateMealPlanRequest _$CreateMealPlanRequestFromJson(
@@ -114,22 +116,34 @@ Map<String, dynamic> _$CreateMealItemRequestToJson(
 DailyMealPlans _$DailyMealPlansFromJson(Map<String, dynamic> json) =>
     DailyMealPlans(
       date: DateTime.parse(json['date'] as String),
-      mealPlans: (json['mealPlans'] as List<dynamic>)
-          .map((e) => MealPlan.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      breakfast: json['breakfast'] == null
+          ? null
+          : MealPlan.fromJson(json['breakfast'] as Map<String, dynamic>),
+      lunch: json['lunch'] == null
+          ? null
+          : MealPlan.fromJson(json['lunch'] as Map<String, dynamic>),
+      dinner: json['dinner'] == null
+          ? null
+          : MealPlan.fromJson(json['dinner'] as Map<String, dynamic>),
+      snack: json['snack'] == null
+          ? null
+          : MealPlan.fromJson(json['snack'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$DailyMealPlansToJson(DailyMealPlans instance) =>
     <String, dynamic>{
       'date': instance.date.toIso8601String(),
-      'mealPlans': instance.mealPlans,
+      'breakfast': instance.breakfast,
+      'lunch': instance.lunch,
+      'dinner': instance.dinner,
+      'snack': instance.snack,
     };
 
 WeeklyMealPlans _$WeeklyMealPlansFromJson(Map<String, dynamic> json) =>
     WeeklyMealPlans(
       startDate: DateTime.parse(json['startDate'] as String),
       endDate: DateTime.parse(json['endDate'] as String),
-      dailyPlans: (json['dailyPlans'] as List<dynamic>)
+      days: (json['days'] as List<dynamic>)
           .map((e) => DailyMealPlans.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
@@ -138,5 +152,5 @@ Map<String, dynamic> _$WeeklyMealPlansToJson(WeeklyMealPlans instance) =>
     <String, dynamic>{
       'startDate': instance.startDate.toIso8601String(),
       'endDate': instance.endDate.toIso8601String(),
-      'dailyPlans': instance.dailyPlans,
+      'days': instance.days,
     };

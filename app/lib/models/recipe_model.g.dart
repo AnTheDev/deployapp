@@ -30,6 +30,7 @@ Recipe _$RecipeFromJson(Map<String, dynamic> json) => Recipe(
       cookTime: (json['cookTime'] as num?)?.toInt() ?? 0,
       difficulty: $enumDecode(_$DifficultyEnumMap, json['difficulty']),
       isPublic: json['isPublic'] as bool,
+      notes: json['notes'] as String?,
       createdBy: UserSimpleResponse.fromJson(
           json['createdBy'] as Map<String, dynamic>),
       createdAt: json['createdAt'] as String,
@@ -46,6 +47,7 @@ Map<String, dynamic> _$RecipeToJson(Recipe instance) => <String, dynamic>{
       'cookTime': instance.cookTime,
       'difficulty': _$DifficultyEnumMap[instance.difficulty]!,
       'isPublic': instance.isPublic,
+      'notes': instance.notes,
       'createdBy': instance.createdBy,
       'createdAt': instance.createdAt,
       'instructions': instance.instructions,
@@ -89,6 +91,7 @@ RecipeDetail _$RecipeDetailFromJson(Map<String, dynamic> json) => RecipeDetail(
       cookTime: (json['cookTime'] as num?)?.toInt() ?? 0,
       difficulty: $enumDecode(_$DifficultyEnumMap, json['difficulty']),
       isPublic: json['isPublic'] as bool,
+      notes: json['notes'] as String?,
       createdBy: UserSimpleResponse.fromJson(
           json['createdBy'] as Map<String, dynamic>),
       createdAt: json['createdAt'] as String,
@@ -109,6 +112,7 @@ Map<String, dynamic> _$RecipeDetailToJson(RecipeDetail instance) =>
       'cookTime': instance.cookTime,
       'difficulty': _$DifficultyEnumMap[instance.difficulty]!,
       'isPublic': instance.isPublic,
+      'notes': instance.notes,
       'createdBy': instance.createdBy,
       'createdAt': instance.createdAt,
       'instructions': instance.instructions,

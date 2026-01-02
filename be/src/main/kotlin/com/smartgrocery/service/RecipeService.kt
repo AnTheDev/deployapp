@@ -65,6 +65,7 @@ class RecipeService(
             servings = request.servings,
             imageUrl = request.imageUrl,
             isPublic = request.isPublic,
+            notes = request.notes,
             createdBy = user
         )
 
@@ -100,6 +101,7 @@ class RecipeService(
         request.servings?.let { recipe.servings = it }
         request.imageUrl?.let { recipe.imageUrl = it }
         request.isPublic?.let { recipe.isPublic = it }
+        request.notes?.let { recipe.notes = it }
 
         // Update ingredients if provided
         request.ingredients?.let { ingredientRequests ->
@@ -216,6 +218,7 @@ class RecipeService(
             servings = recipe.servings,
             imageUrl = recipe.imageUrl,
             isPublic = recipe.isPublic,
+            notes = recipe.notes,
             createdBy = recipe.createdBy?.let {
                 UserSimpleResponse(
                     id = it.id!!,
@@ -241,6 +244,7 @@ class RecipeService(
             servings = recipe.servings,
             imageUrl = recipe.imageUrl,
             isPublic = recipe.isPublic,
+            notes = recipe.notes,
             createdBy = recipe.createdBy?.let {
                 UserSimpleResponse(
                     id = it.id!!,

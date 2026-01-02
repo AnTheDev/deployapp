@@ -73,8 +73,10 @@ class MealItem {
   final int servings;
   final String? note;
   final Recipe? recipe;
+  @JsonKey(name: 'dishName')
+  final String? dishName;
 
-  String get displayName => customDishName ?? recipeName ?? 'Món ăn không tên';
+  String get displayName => dishName ?? customDishName ?? recipe?.title ?? recipeName ?? 'Món ăn không tên';
 
   MealItem({
     required this.id,
@@ -85,6 +87,7 @@ class MealItem {
     required this.servings,
     this.note,
     this.recipe,
+    this.dishName,
   });
 
   factory MealItem.fromJson(Map<String, dynamic> json) => _$MealItemFromJson(json);
@@ -132,18 +135,36 @@ class CreateMealItemRequest {
 @JsonSerializable()
 class DailyMealPlans {
   final DateTime date;
-  final List<MealPlan> mealPlans;
+  final MealPlan? breakfast;
+  final MealPlan? lunch;
+  final MealPlan? dinner;
+  final MealPlan? snack;
 
   DailyMealPlans({
     required this.date,
-    required this.mealPlans,
+    this.breakfast,
+    this.lunch,
+    this.dinner,
+    this.snack,
   });
 
+  List<MealPlan> get mealPlans => [
+    if (breakfast != null) breakfast!,
+    if (lunch != null) lunch!,
+    if (dinner != null) dinner!,
+    if (snack != null) snack!,
+  ];
+
   MealPlan? getMealPlanByType(MealType type) {
-    try {
-      return mealPlans.firstWhere((plan) => plan.mealType == type);
-    } catch (e) {
-      return null;
+    switch (type) {
+      case MealType.BREAKFAST:
+        return breakfast;
+      case MealType.LUNCH:
+        return lunch;
+      case MealType.DINNER:
+        return dinner;
+      case MealType.SNACK:
+        return snack;
     }
   }
 
@@ -155,12 +176,12 @@ class DailyMealPlans {
 class WeeklyMealPlans {
   final DateTime startDate;
   final DateTime endDate;
-  final List<DailyMealPlans> dailyPlans;
+  final List<DailyMealPlans> days;
 
   WeeklyMealPlans({
     required this.startDate,
     required this.endDate,
-    required this.dailyPlans,
+    required this.days,
   });
 
   factory WeeklyMealPlans.fromJson(Map<String, dynamic> json) => _$WeeklyMealPlansFromJson(json);
