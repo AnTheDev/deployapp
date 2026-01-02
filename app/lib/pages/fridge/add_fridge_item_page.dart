@@ -157,9 +157,6 @@ class _AddFridgeItemPageState extends State<AddFridgeItemPage> {
         itemData['expirationDate'] = _expirationDate!.toIso8601String().split('T').first;
       }
 
-      // Debug: print data being sent
-      print('Sending fridge item data: $itemData');
-
       context.read<FridgeProvider>().addFridgeItem(itemData).then((_) {
         if (mounted) {
           Navigator.of(context).pop();

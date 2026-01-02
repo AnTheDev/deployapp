@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/models/notification_model.dart';
 import 'package:flutter_boilerplate/providers/notification_provider.dart';
+
 import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/pages/fridge/fridge_page.dart';
 import 'package:timeago/timeago.dart' as timeago;
