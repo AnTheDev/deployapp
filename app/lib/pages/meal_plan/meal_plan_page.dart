@@ -18,25 +18,13 @@ class MealPlanPage extends StatefulWidget {
 
 class _MealPlanPageState extends State<MealPlanPage> {
   DateTime _selectedDate = DateTime.now();
-  late PageController _pageController;
-  int _currentPageIndex = 500;
-  
-  // Track the initial page index based on today's date
-  static const int _basePageIndex = 500;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: _basePageIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   void _loadData() {
@@ -47,18 +35,18 @@ class _MealPlanPageState extends State<MealPlanPage> {
     }
   }
 
-  DateTime _getDateFromPageIndex(int index) {
-    // Base date is today at page index 500
-    final today = DateTime.now();
-    final baseDate = DateTime(today.year, today.month, today.day);
-    return baseDate.add(Duration(days: index - _basePageIndex));
+  void _goToPreviousDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+    });
+    _loadDataForDate(_selectedDate);
   }
-  
-  int _getPageIndexFromDate(DateTime date) {
-    final today = DateTime.now();
-    final baseDate = DateTime(today.year, today.month, today.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
-    return _basePageIndex + targetDate.difference(baseDate).inDays;
+
+  void _goToNextDay() {
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+    _loadDataForDate(_selectedDate);
   }
 
   @override
@@ -96,22 +84,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
                   );
                 }
 
-                return PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    final newDate = _getDateFromPageIndex(index);
-                    if (_currentPageIndex != index) {
-                      setState(() {
-                        _currentPageIndex = index;
-                        _selectedDate = newDate;
-                      });
-                      _loadDataForDate(newDate);
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildDayView(provider);
-                  },
-                );
+                return _buildDayView(provider);
               },
             ),
           ),
@@ -202,12 +175,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left, color: Colors.white),
-                onPressed: () {
-                  _pageController.previousPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
+                onPressed: _goToPreviousDay,
               ),
               GestureDetector(
                 onTap: () => _selectDate(),
@@ -235,12 +203,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right, color: Colors.white),
-                onPressed: () {
-                  _pageController.nextPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
+                onPressed: _goToNextDay,
               ),
             ],
           ),
@@ -267,12 +230,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
 
         return GestureDetector(
           onTap: () {
-            final newIndex = _getPageIndexFromDate(date);
             setState(() {
               _selectedDate = date;
-              _currentPageIndex = newIndex;
             });
-            _pageController.jumpToPage(newIndex);
             _loadDataForDate(date);
           },
           child: Container(
@@ -849,12 +809,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
-      final newIndex = _getPageIndexFromDate(picked);
       setState(() {
         _selectedDate = picked;
-        _currentPageIndex = newIndex;
       });
-      _pageController.jumpToPage(newIndex);
       _loadDataForDate(picked);
     }
   }
