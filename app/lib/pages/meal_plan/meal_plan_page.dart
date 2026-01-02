@@ -671,6 +671,34 @@ class _MealPlanPageState extends State<MealPlanPage> {
                         ),
                       )),
                     ],
+                    if (recipeDetail.notes != null && recipeDetail.notes!.isNotEmpty) ...[
+                      const Text(
+                        'Ghi chú',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.lightbulb_outline, color: Colors.amber, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                recipeDetail.notes!,
+                                style: const TextStyle(fontSize: 15, height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

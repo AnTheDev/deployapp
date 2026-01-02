@@ -26,7 +26,7 @@ interface RecipeRepository : JpaRepository<Recipe, Long> {
     
     fun findByDifficulty(difficulty: RecipeDifficulty): List<Recipe>
 
-    @Query("SELECT r FROM Recipe r LEFT JOIN FETCH r.ingredients LEFT JOIN FETCH r.createdBy WHERE r.id = :id")
+    @Query("SELECT r FROM Recipe r LEFT JOIN FETCH r.ingredients i LEFT JOIN FETCH i.masterProduct LEFT JOIN FETCH r.createdBy WHERE r.id = :id")
     fun findByIdWithIngredients(id: Long): Recipe?
 
     @EntityGraph(attributePaths = ["createdBy"])

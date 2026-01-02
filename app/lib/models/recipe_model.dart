@@ -33,6 +33,7 @@ class Recipe {
   final int? cookTime;
   final Difficulty difficulty;
   final bool isPublic;
+  final String? notes;
   final UserSimpleResponse createdBy;
   final String createdAt;
   final String? instructions;
@@ -47,6 +48,7 @@ class Recipe {
     this.cookTime = 0,
     required this.difficulty,
     required this.isPublic,
+    this.notes,
     required this.createdBy,
     required this.createdAt,
     this.instructions,
@@ -98,6 +100,7 @@ class RecipeDetail {
   final int? cookTime;
   final Difficulty difficulty;
   final bool isPublic;
+  final String? notes;
   final UserSimpleResponse createdBy;
   final String createdAt;
   final String? instructions;
@@ -113,6 +116,7 @@ class RecipeDetail {
     this.cookTime = 0,
     required this.difficulty,
     required this.isPublic,
+    this.notes,
     required this.createdBy,
     required this.createdAt,
     this.instructions,
