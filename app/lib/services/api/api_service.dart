@@ -681,7 +681,11 @@ class ApiService {
       final response = await _dio.get(ApiConfig.familyDailyMealPlans(familyId), queryParameters: {'date': date});
       final data = response.data['data'];
       if (data == null) return [];
-      return (data as List).map((i) => MealPlan.fromJson(i)).toList();
+      
+      // Backend returns DailyMealPlanResponse (object with breakfast, lunch, dinner, snack)
+      // Convert to List<MealPlan>
+      final dailyPlan = DailyMealPlans.fromJson(data);
+      return dailyPlan.mealPlans;
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -692,7 +696,15 @@ class ApiService {
       final response = await _dio.get(ApiConfig.familyWeeklyMealPlans(familyId), queryParameters: {'startDate': startDate});
       final data = response.data['data'];
       if (data == null) return [];
-      return (data as List).map((i) => MealPlan.fromJson(i)).toList();
+      
+      // Backend returns WeeklyMealPlanResponse (object with days array)
+      // Convert to flat List<MealPlan>
+      final weeklyPlan = WeeklyMealPlans.fromJson(data);
+      final allMealPlans = <MealPlan>[];
+      for (final day in weeklyPlan.days) {
+        allMealPlans.addAll(day.mealPlans);
+      }
+      return allMealPlans;
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

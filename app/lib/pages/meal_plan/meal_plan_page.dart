@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_boilerplate/models/meal_plan_model.dart';
+import 'package:flutter_boilerplate/models/recipe_model.dart';
 import 'package:flutter_boilerplate/providers/meal_plan_provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
+import 'package:flutter_boilerplate/providers/recipe_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/pages/meal_plan/create_meal_plan_page.dart';
 
@@ -22,7 +24,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   @override
@@ -319,6 +323,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () => _confirmDeleteMealItem(item, mealPlan.id, provider),
                   ),
+                  onTap: () => _showRecipeDetails(item),
                 );
               },
             ),
@@ -443,6 +448,257 @@ class _MealPlanPageState extends State<MealPlanPage> {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showRecipeDetails(MealItem item) async {
+    final recipe = item.recipe;
+    
+    if (recipe == null) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Thông báo'),
+          content: const Text('Món ăn này chưa có công thức'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Fetch recipe details
+    try {
+      await context.read<RecipeProvider>().fetchRecipeById(recipe.id);
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      final recipeDetail = context.read<RecipeProvider>().selectedRecipeDetail;
+      if (recipeDetail == null) {
+        _showErrorDialog('Không thể tải thông tin công thức');
+        return;
+      }
+
+      _showRecipeDetailDialog(item, recipeDetail);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      _showErrorDialog('Lỗi: $e');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lỗi'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRecipeDetailDialog(MealItem item, RecipeDetail recipeDetail) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.restaurant_menu, size: 28, color: Colors.orange),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      recipeDetail.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildInfoChip(Icons.people, '${item.servings} phần', Colors.orange),
+                  if (recipeDetail.prepTime != null && recipeDetail.prepTime! > 0)
+                    _buildInfoChip(Icons.schedule, '${recipeDetail.prepTime} phút chuẩn bị', Colors.blue),
+                  if (recipeDetail.cookTime != null && recipeDetail.cookTime! > 0)
+                    _buildInfoChip(Icons.timer, '${recipeDetail.cookTime} phút nấu', Colors.green),
+                  _buildInfoChip(
+                    Icons.star,
+                    recipeDetail.difficulty == Difficulty.EASY
+                        ? 'Dễ'
+                        : recipeDetail.difficulty == Difficulty.MEDIUM
+                            ? 'Trung bình'
+                            : 'Khó',
+                    Colors.amber,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    if (recipeDetail.description.isNotEmpty) ...[
+                      const Text(
+                        'Mô tả',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        recipeDetail.description,
+                        style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (recipeDetail.ingredients.isNotEmpty) ...[
+                      const Text(
+                        'Nguyên liệu',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ...recipeDetail.ingredients.map((ingredient) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 6),
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                '${ingredient.customIngredientName ?? ingredient.ingredientName} - ${ingredient.quantity} ${ingredient.unit}${ingredient.note != null ? " (${ingredient.note})" : ""}',
+                                style: const TextStyle(fontSize: 15),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                      const SizedBox(height: 20),
+                    ],
+                    if (recipeDetail.instructions != null && recipeDetail.instructions!.isNotEmpty) ...[
+                      const Text(
+                        'Cách làm',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ...recipeDetail.steps!.asMap().entries.map((entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${entry.key + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  entry.value,
+                                  style: const TextStyle(fontSize: 15, height: 1.5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 13),
+          ),
+        ],
       ),
     );
   }
